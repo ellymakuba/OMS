@@ -5,8 +5,11 @@
 	if (isset($_POST['save'])){
     if(isset($_POST['weight']) && isset($_POST['temperature']) && isset($_POST['weight'])){
       $fO->saveEncounter($_POST['weight'],$_POST['temperature'],$_POST['blood_pressure'],$_POST['pulse'],
-      $_POST['respiration'],$_SESSION['log_user']);
+      $_POST['respiration'],$_SESSION['log_user'],$_SESSION['patient']);
     }
+		unset($_SESSION['patient']);
+		unset($_SESSION['encounter']);
+		header('Location:patient_list.php');
 	}
   if (isset($_POST['edit'])){
 		if(isset($_POST['weight']) && isset($_POST['temperature']) && isset($_POST['weight'])){
@@ -27,6 +30,11 @@
       <a href="new_encounter.php" id="item_selected">New Encounter</a>
       </div>
       <?php
+			if(isset($_GET['SelectedPatient'])){
+				$_SESSION['patient']=$_GET['SelectedPatient'];
+				$patient=$fO->getPatientByID($_SESSION['patient']);
+			}
+			if(isset($_SESSION['patient'])){
 			if(isset($_REQUEST['SelectedEncounter'])){
         $encounter=$fO->getEncounterByID($_REQUEST['SelectedEncounter']);
         $_SESSION['encounter']=$_REQUEST['SelectedEncounter'];
@@ -35,7 +43,7 @@
 				<h2 class="form-signin-heading">Edit Encounter</h2>
 				<div class="form-inline">
 					<label for="patient_name">Patient Name:</label>
-					<input type="text"  name="patient_name" class="form-control" style="width:90%;float:right;" placeholder="Patient Name" required value="<?php echo $encounter['p_name'] ?>">
+					<input type="text"  name="patient_name" class="form-control" style="width:90%;float:right;" placeholder="Patient Name" required value="<?php echo $patient['p_name'] ?>">
 				</div>
 				<div style="clear:both;"></div>
 				<div class="form-inline">
@@ -72,6 +80,12 @@
 		<form class="form-signin" method="POST"  action="<?php echo $_SERVER['PHP_SELF']; ?>">
 			<h2 class="form-signin-heading">Add New Encounter</h2>
 			<div class="form-inline">
+				<label for="patient_name">Patient Name:</label>
+				<input type="text"  name="patient_name" class="form-control" style="width:90%;float:right;"
+				placeholder="Patient Name" required value="<?php echo $patient['p_name'] ?>">
+			</div>
+			<div style="clear:both;"></div>
+			<div class="form-inline">
 				<label for="weight">Weight:</label>
       	<input type="text"  name="weight" class="form-control" style="width:90%;float:right;" placeholder="Weight" required>
 			</div>
@@ -99,6 +113,7 @@
 			<input type="submit" name="save" class="btn btn-lg btn-primary" value="Add Encounter"
 			    style="display: block; margin: 0 auto;width:200px;"></input>
 			</form>
+			<?php } ?>
 </div>
       <?php }?>
   </body>

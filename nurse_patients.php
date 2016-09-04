@@ -12,8 +12,7 @@
 		?>
 		<div id="menu_main">
 			<a href="nurse_patients.php" id="item_selected">Patients</a>
-      <a href="cust_search.php">Enter Vitals</a>
-      <a href="cust_search.php">Admit Patient</a>
+      <a href="admission_list.php">Admission List</a>
       <a href="manage_nurse.php">Manage Nurse</a>
 		</div>
     <div class="table-responsive">

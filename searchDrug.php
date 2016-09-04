@@ -6,7 +6,7 @@ $q=$_GET['term'];
 $drugs=$fO->getDrugByName($q);
 foreach($drugs as $drug)
 {
- $obj[]=array('id' => $drug['id'], 'name' => $drug['name']);
+ $obj[]=array('id' => $drug['id'],'name' => $drug['name'],'stock' => $drug['stock']);
 }
 print json_encode($obj);
 ?>
