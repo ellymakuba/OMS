@@ -10,8 +10,8 @@
 		if(isset($_POST['admission'])){
 			$fO->doctorAllowAdmission($_SESSION['encounter']);
 		}
-		$fO->seenDoctor($_SESSION['encounter']);
 		$lastId=$fO->savePrescription($_POST['patient_id'],$_POST['prescription'],$_SESSION['log_user'],$_SESSION['encounter']);
+		$fO->seenDoctor($_SESSION['encounter'],$lastId);
 		if(count($_POST['drug'])>0){
 		foreach($_POST['drug'] as $value) {
 			if(isset($_POST['drug'][$i]) && isset($_POST['dose'][$i]) && isset($_POST['duration'][$i])){
@@ -66,7 +66,7 @@
 	$(document).on("click", "#drug_search", function() {
 	$(this).autocomplete({
  		source:function(request,response){
- 	$.getJSON("searchDrug.php?term="+request.term,function(result){
+ 	$.getJSON("searchInventory.php?term="+request.term,function(result){
 	 response($.map(result,function(item){
 	 	return{
 		id:item.id,
@@ -184,7 +184,7 @@ $(window).on('popstate', function() {
 				}
 				if(isset($_GET['add_prescription_drug'])){
 				$SearchString =$_GET['add_prescription_drug'];
-				$drug=$fO->getSingleDrugByName($SearchString);
+				$drug=$fO->getInventoryItemByName($SearchString);
 				$AlreadyOnThisCart =0;
 				if (count($_SESSION['drugs']->LineItems)>0){
 					   foreach ($_SESSION['drugs']->LineItems AS $OrderItem)

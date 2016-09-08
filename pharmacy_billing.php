@@ -1,21 +1,32 @@
 <?PHP
 	require 'functions.php';
 	$fO=new functions();
-	$fO->checkLogin();
-  //Generate timestamp
-	$timestamp = time();
-	//CREATE-Button
+	$fO->checkLogin();	
 	if (isset($_POST['bill'])){
 		$i=0;
 		foreach($_POST['drug'] as $value) {
 			if(isset($_POST['drug'][$i]) && isset($_POST['dose'][$i]) && isset($_POST['duration'][$i])
 			&& isset($_POST['quantity'][$i]) && isset($_POST['amount'][$i]) && isset($_SESSION['prescription'])){
 				$fO->billPharmacyPrescription($_SESSION['prescription'],$_POST['drug'][$i],$_POST['dose'][$i],$_POST['duration'][$i],
-			$_POST['quantity'][$i],$_POST['price'][$i],$_POST['amount'][$i],$_SESSION['log_user']);
+			$_POST['quantity'][$i],$_POST['price'][$i],$_POST['amount'][$i],$_SESSION['log_user'],0);
 			}
 			$i++;
 		}
 		$fO->pharmacyBilled($_SESSION['prescription']);
+		header('Location:manage_pharmacy.php');
+	}
+	if (isset($_POST['issue'])){
+		$i=0;
+		foreach($_POST['drug'] as $value) {
+			if(isset($_POST['drug'][$i]) && isset($_POST['dose'][$i]) && isset($_POST['duration'][$i])
+			&& isset($_POST['quantity'][$i]) && isset($_POST['amount'][$i]) && isset($_SESSION['prescription'])){
+				$fO->billPharmacyPrescription($_SESSION['prescription'],$_POST['drug'][$i],$_POST['dose'][$i],$_POST['duration'][$i],
+			$_POST['quantity'][$i],$_POST['price'][$i],$_POST['amount'][$i],$_SESSION['log_user'],1);
+			}
+			$i++;
+		}
+		//$fO->pharmacyBilled($_SESSION['prescription']);
+		//add function to deduct inventory the quantities issued
 		header('Location:manage_pharmacy.php');
 	}
   ?>
@@ -81,12 +92,16 @@ $(".quantity").change(function(){
       <a href="manage_pharmacy.php">Drug Orders</a>
   		<a href="pharmacy_billing.php" id="item_selected">Billing</a>
       </div>
-      <?php if(isset($_GET['selectedPrescription']) && isset($_GET['selectedPatient'])){
-        $selectedPatientId=$_GET['selectedPatient'];
-        $patient=$fO->getPatientByID($selectedPatientId);
+      <?php if(isset($_GET['selectedPrescription']) && isset($_GET['selectedPatient']) && isset($_GET['selectedEncounter'])){
+        $_SESSION['patient']=$_GET['selectedPatient'];
+				$_SESSION['prescription']=$_GET['selectedPrescription'];
+				$_SESSION['encounter']=$_GET['selectedEncounter'];
+			}
+			if(isset($_SESSION['patient']) && isset($_SESSION['prescription']) && isset($_SESSION['encounter'])){
+				$patient=$fO->getPatientByID($_SESSION['patient']);
         $observation=$fO->getPrescriptionById($_GET['selectedPrescription']);
         $drugs=$fO->getPrescriptionDetailsById($_GET['selectedPrescription']);
-				$_SESSION['prescription']=$_GET['selectedPrescription'];
+				$encounter=$fO->getEncounterByID($_SESSION['encounter']);
       ?>
       <form class="form-signin" method="POST"  action="<?php echo $_SERVER['PHP_SELF']?>">
         <h2 class="form-signin-heading">Pharmacy Billing</h2>
@@ -143,8 +158,16 @@ $(".quantity").change(function(){
 				<div style="clear: both;">
 				</div>
 				<br><br>
-        <input type="submit" name="bill" class="btn btn-lg btn-primary"
-				value="Bill Drugs" style="display: block; margin: 0 auto;width:200px;"></input>
+				<?php
+				if($encounter['admitted']==1){
+				?>
+        <input type="submit" name="issue" class="btn btn-lg btn-primary"
+				value="Issue To Nurse" style="display: block; margin: 0 auto;width:200px;"></input>
+				<?php }
+				else{
+				echo '<input type="submit" name="bill" class="btn btn-lg btn-primary"
+					value="Bill Drugs" style="display: block; margin: 0 auto;width:200px;"></input>';
+				}?>
       </form>
       <?php } ?>
   </body>

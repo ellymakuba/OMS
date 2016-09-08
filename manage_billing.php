@@ -4,13 +4,12 @@
 	$fO->checkLogin();
   ?>
   <html>
-  <?PHP $fO->includeHead('Admission List',0) ?>
+  <?PHP $fO->includeHead('Active Encounters',0) ?>
   </head>
   <body class="container">
-  <?PHP $fO->includeMenu(2); ?>
+  <?PHP $fO->includeMenu(6); ?>
 	<div id="menu_main">
-		<a href="manage_nurse.php" id="item_selected">Active Encounters</a>
-		<a href="admission_list.php">Admission List</a>
+		<a href="manage_billing.php" id="item_selected">Active Encounters</a>
     </div>
   <div class="table-responsive">
     <div class="col-sm-3 col-md-3 pull-left">
@@ -26,12 +25,11 @@
   <table class="table table-striped">
   <tr>
   <form  method="POST">
-    <th>#</th>
+    <th>Dashboard</th>
           <th>Patient Name</th>
           <th>Temperature</th>
           <th>Blood Pressure</th>
 					<th>Patient Type</th>
-					<th>Admission</th>
   </form>
   </tr>
   <?php
@@ -42,21 +40,18 @@
 			if($patient['admitted']==1){
 				$patientType="IP";
 			}
-      printf("<tr><td><a href=\"new_patient.php?SelectedPatient=%s\">" .$patient['patient_id'] . "</a></td>
+      printf("<tr><td><a href=\"patient_billing.php?selectedEncounter=%s\">" .$patient['encounter_id'] . "</a></td>
 	    <td>%s</td>
 	    <td>%s</td>
 	    <td>%s</td>
 			<td>%s</td>
-			<td><a href=\"patient_admission.php?SelectedPatient=%s&selectedEncounter=%s&patientType=%s\">Admit</a></td>
 	    </tr>",
-	    $patient['patient_id'],
+	    $patient['encounter_id'],
 	    $patient['p_name'],
 	    $patient['temperature'],
 	    $patient['blood_pressure'],
 			$patientType,
-			$patient['patient_id'],
-			$patient['encounter_id'],
-			$patient['admitted']
+			$patient['patient_id']
 	    );
     }
   }
@@ -67,21 +62,18 @@
 			if($patient['admitted']==1){
 				$patientType="IP";
 			}
-			printf("<tr><td><a href=\"new_patient.php?SelectedPatient=%s\">" .$patient['patient_id'] ."</a></td>
+			printf("<tr><td><a href=\"patient_billing.php?selectedEncounter=%s\">" .$patient['encounter_id'] . "</a></td>
 	    <td>%s</td>
 	    <td>%s</td>
 	    <td>%s</td>
 			<td>%s</td>
-			<td><a href=\"patient_admission.php?SelectedPatient=%s&selectedEncounter=%s&patientType=%s\">Admit</a></td>
 	    </tr>",
-	    $patient['patient_id'],
+	    $patient['encounter_id'],
 	    $patient['p_name'],
 	    $patient['temperature'],
 	    $patient['blood_pressure'],
 			$patientType,
-			$patient['patient_id'],
-			$patient['encounter_id'],
-			$patient['admitted']
+			$patient['patient_id']
 	    );
     }
   }

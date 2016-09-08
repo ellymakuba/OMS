@@ -56,7 +56,7 @@
 				echo "<td>".$patient['p_name']."</td>";
 				echo "<td>".$patient['observation']."</td>";
 				echo "<td><a href=".'pharmacy_billing.php?selectedPatient='.$patient['patient_id'].
-				"&selectedPrescription=".$patient['prescription_id'].">Bill</a></td>";
+				"&selectedPrescription=".$patient['prescription_id']."&selectedEncounter=".$patient['encounter_id'].">Bill</a></td>";
 				echo "</tr>";
       }
     }
