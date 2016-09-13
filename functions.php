@@ -13,16 +13,24 @@ class functions{
 }
 public function getUserByUsernameAndPassword($username, $password){
  		$password=sha1($password);
-        $stmt = $this->conn->prepare("SELECT * FROM user, ugroup WHERE user.ugroup_id = ugroup.ugroup_id AND user_name = ? AND user_pw LIKE ?");
+        $stmt = $this->conn->prepare("SELECT * FROM user,securityroles WHERE user.secroleid = securityroles.secroleid AND user_name = ? AND user_pw LIKE ?");
 		$data=array($username, $password);
 		$stmt->execute($data);
         $stmt->setFetchMode(PDO::FETCH_ASSOC);
 		return $stmt->fetch();
     }
-/**
-	* Generate unique fingerprint for every user session
-	* @return string fingerprint : Unique fingerprint generated from remote server address, random string, and user agent
-	*/
+    function getUserByUserName($userName){
+      try{
+        $stmt=$this->conn->prepare("SELECT * FROM user WHERE user_name LIKE ?");
+        $params=array($userName);
+        $stmt->execute($params);
+        $stmt->setFetchMode(PDO::FETCH_ASSOC);
+		    $_SESSION['user']=$stmt->fetch();
+      }
+      catch(PDOException $e){
+        echo $e->getMessage();
+      }
+    }
 public function fingerprint(){
 		return $fingerprint = md5($_SERVER['REMOTE_ADDR'].'jikI/20Y,!'.$_SERVER['HTTP_USER_AGENT']);
 	}
@@ -69,17 +77,18 @@ public function fingerprint(){
 	function checkSQL($sqlquery){
 		if (!$sqlquery) die ('SQL-Statement failed: '.mysql_error());
 	}
-	public function getHospitalCharges(){
-	  $stmt = $this->conn->prepare("SELECT * FROM hospital_charges");
-		$stmt->execute();
+	public function getUserRole($id){
+    try{
+	  $stmt = $this->conn->prepare("SELECT secroleid FROM user WHERE user_id=?");
+    $params=array($id);
+		$stmt->execute($params);
     $stmt->setFetchMode(PDO::FETCH_ASSOC);
-		while($row = $stmt->fetch()){
-			switch ($row['id']){
-				case 1:
-					$_SESSION['consultation_fee'] = $row['cost'];
-					break;
-			}
-		}
+    $result=$stmt->fetch();
+    $_SESSION['secroleId'] = $result['secroleid'];
+  }
+  catch(PDOException $e){
+    echo $e->getMessage();
+  }
 	}
 	function sanitize($var) {
 		$var=filter_var($var, FILTER_SANITIZE_STRING);
@@ -114,8 +123,8 @@ public function fingerprint(){
       <link rel="stylesheet" href="dist/css/bootstrap.min.css">
       <script src="dist/js/bootstrap.min.js"></script>
       <script src="bootbox.min.js"></script>
-			<title>webafriq digital partners | '.$title.'</title>
-			<link rel="shortcut icon" href="ico/favicon.ico" type="image/x-icon">
+			<title>webafriq Digital Ordering | '.$title.'</title>
+			<link rel="shortcut icon" href="" type="image/x-icon">
 			<link rel="stylesheet" href="css/mangoo.css" />
       <link rel="stylesheet" href="jquery/jquery-ui-1.11.4/jquery-ui.min.css">
 			<script>
@@ -174,6 +183,8 @@ public function fingerprint(){
 	* @param int tab_no : Number of currently selected menu tab.
 	*/
 	function includeMenu($tab_no){
+    $this->getUserByUserName($_SESSION['log_user']);
+    $this->getUserRole($_SESSION['user']['user_id']);
 		echo '
 		<!-- MENU HEADER -->
 		<div id="menu_header">
@@ -191,34 +202,30 @@ public function fingerprint(){
 		echo '
 		<!-- MENU TABS -->
 		<div id="menu_tabs">
-			<ul>
-				<li';
-				if ($tab_no == 1) echo ' id="tab_selected"';
-				echo '><a href="patient_list.php">Admission</a></li>
-				<li';
+			<ul>';
+
+        if($_SESSION['secroleId']==7){
+          echo '<li';
+				  if ($tab_no == 1) echo ' id="tab_selected"';
+				  echo '><a href="client_orders.php">Client Orders</a></li>';
+        }
+        if($_SESSION['secroleId']==1){
+          echo '<li';
+				  if ($tab_no == 1) echo ' id="tab_selected"';
+				  echo '><a href="manage_orders.php">Orders</a></li>';
+				echo '<li';
 				if ($tab_no == 2) echo ' id="tab_selected"';
-				echo '><a href="manage_nurse.php">Nurse</a></li>
-				<li';
-				if ($tab_no == 3) echo ' id="tab_selected"';
-				echo '><a href="manage_doctor.php">Doctor</a></li>
-				<li';
-				if ($tab_no == 4) echo ' id="tab_selected"';
-				echo '><a href="manage_laboratory.php">Laboratory</a></li>
-        <li';
-				if ($tab_no == 5) echo ' id="tab_selected"';
-				echo '><a href="manage_pharmacy.php">Pharmacy</a></li>
-				<li';
-				if ($tab_no == 6) echo ' id="tab_selected"';
-				echo '><a href="manage_billing.php">Billing</a></li>
+				echo '><a href="manage_inventory.php">Inventory</a></li>
 				<li';
 				if ($tab_no == 7) echo ' id="tab_selected"';
 				echo '><a href="manage_settings.php">Reports</a></li>
         <li';
 				if ($tab_no == 8) echo ' id="tab_selected"';
-				echo '><a href="manage_inventory.php">inventory</a></li>
+				echo '><a href="manage_inventory.php">Billing</a></li>
         <li';
         if ($tab_no == 9) echo ' id="tab_selected"';
         echo '><a href="manage_settings.php">Settings</a></li>';
+      }
 			echo '</ul>
 		</div>';
 	}
@@ -238,9 +245,9 @@ public function fingerprint(){
 		}
 	}
 
-  function getAllDrugs(){
+  function getAllProducts(){
     try{
-      $stmt=$this->conn->prepare("SELECT * FROM drug");
+      $stmt=$this->conn->prepare("SELECT * FROM product");
       $stmt->execute();
       $resultSet=$stmt->fetchALL();
   		return $resultSet;
@@ -249,11 +256,11 @@ public function fingerprint(){
 			echo $e->getMessage();
 		}
   }
-  function getDrugName($drugName){
+  function getProductsByName($name){
     try{
-      $stmt=$this->conn->prepare("SELECT * FROM drug WHERE name LIKE ?");
-      $drugName="%".$drugName."%";
-      $params=array($drugName);
+      $stmt=$this->conn->prepare("SELECT * FROM product WHERE name LIKE ?");
+      $name="%".$name."%";
+      $params=array($name);
       $stmt->execute($params);
       $resultSet=$stmt->fetchALL();
   		return $resultSet;
@@ -262,10 +269,22 @@ public function fingerprint(){
 			echo $e->getMessage();
 		}
   }
-  function getDrugById($drugId){
+  function getProductByName($name){
     try{
-      $stmt=$this->conn->prepare("SELECT * FROM drug WHERE id=?");
-      $params=array($drugId);
+      $stmt=$this->conn->prepare("SELECT * FROM product WHERE name LIKE ? LIMIT 1");
+      $params=array($name);
+      $stmt->execute($params);
+      $stmt->setFetchMode(PDO::FETCH_ASSOC);
+      return $stmt->fetch();
+    }
+    catch(PDOException $e){
+			echo $e->getMessage();
+		}
+  }
+  function getProductById($id){
+    try{
+      $stmt=$this->conn->prepare("SELECT * FROM product WHERE id=?");
+      $params=array($id);
       $stmt->execute($params);
       $stmt->setFetchMode(PDO::FETCH_ASSOC);
   		return $stmt->fetch();
@@ -274,9 +293,9 @@ public function fingerprint(){
 			echo $e->getMessage();
 		}
   }
-  function updateDrug($drugId,$name,$bPrice,$sPrice,$description,$company,$category){
+  function updateProduct($drugId,$name,$bPrice,$sPrice,$description,$company,$category){
 		try{
-			$stmt=$this->conn->prepare("UPDATE drug SET name=?,buying_price=?,selling_price=?
+			$stmt=$this->conn->prepare("UPDATE product SET name=?,buying_price=?,selling_price=?
       description=?,company=?,category=? WHERE id=?");
 			$params=array($name,$bPrice,$sPrice,$description,$company,$category,$drugId);
 			$stmt->execute($params);
@@ -285,9 +304,9 @@ public function fingerprint(){
 			echo $e->getMessage();
 		}
 	}
-  function getAllPatients(){
+  function getAllSalesOrders(){
     try{
-      $stmt=$this->conn->prepare("SELECT * FROM patient");
+      $stmt=$this->conn->prepare("SELECT * FROM sales_order");
       $stmt->execute();
       $resultSet=$stmt->fetchALL();
   		return $resultSet;
@@ -296,11 +315,9 @@ public function fingerprint(){
 			echo $e->getMessage();
 		}
   }
-  function getNewPatientEncounters(){
+  function getAllPurchaseOrders(){
     try{
-      $stmt=$this->conn->prepare("SELECT enc.*,pa.p_name FROM encounter enc
-      INNER JOIN patient pa ON enc.patient_id=pa.patient_id
-      WHERE enc.open=1");
+      $stmt=$this->conn->prepare("SELECT * FROM purchase_order");
       $stmt->execute();
       $resultSet=$stmt->fetchALL();
   		return $resultSet;
@@ -309,11 +326,10 @@ public function fingerprint(){
 			echo $e->getMessage();
 		}
   }
-  function getPatientByName($name){
+  function getAllClientOrders($name){
     try{
-      $stmt=$this->conn->prepare("SELECT * FROM patient WHERE p_name LIKE ?");
-      $names="%".$name."%";
-      $params=array($names);
+      $stmt=$this->conn->prepare("SELECT * FROM sales_order WHERE client LIKE ?");
+      $params=array($name);
       $stmt->execute($params);
       $resultSet=$stmt->fetchALL();
   		return $resultSet;
@@ -322,383 +338,123 @@ public function fingerprint(){
 			echo $e->getMessage();
 		}
   }
-  function getPatientByID($id){
+  function updateSecurityRole($roleName,$roleId){
     try{
-      $stmt=$this->conn->prepare("SELECT * FROM patient WHERE patient_id LIKE ?");
-      $params=array($id);
+      $stmt=$this->conn->prepare("UPDATE securityroles SET secrolename =?	WHERE secroleid =?");
+      $params=array($roleName,$roleId);
       $stmt->execute($params);
-      $stmt->setFetchMode(PDO::FETCH_ASSOC);
-  		return $stmt->fetch();
     }
     catch(PDOException $e){
 			echo $e->getMessage();
 		}
   }
-  function getNurseAllPatients($userName){
+  function addNewSecurityRole($roleName){
     try{
-      $stmt=$this->conn->prepare("SELECT patient.p_name,patient.patient_id,nurse_work.shift_start,
-      nurse_work.shift_end,nurse_work.food,consultation.observation
-      FROM nurse_work
-      INNER JOIN patient on nurse_work.patient_id=patient.patient_id
-      INNER JOIN consultation on patient.patient_id=consultation.patient_id
-      WHERE nurse_work.username LIKE ?
-      AND nurse_work.patient_id=consultation.patient_id");
-      $params=array($userName);
-      $stmt->execute($params);
-      $resultSet=$stmt->fetchALL();
-      return $resultSet;
-    }
-    catch(PDOException $e){
-    echo $e->getMessage();
-    }
-  }
-  function getNurseSinglePatient($userName,$patientName){
-    try{
-      $stmt=$this->conn->prepare("SELECT patient.p_name,patient.patient_id,nurse_work.shift_start,
-      nurse_work.shift_end,nurse_work.food,consultation.observation
-      FROM patient
-      INNER JOIN nurse_work  on patient.patient_id=nurse_work.patient_id
-      INNER JOIN consultation on patient.patient_id=consultation.patient_id
-      WHERE nurse_work.username LIKE ? and patient.p_name LIKE ?");
-      $patientName="%".$patientName."%";
-      $params=array($userName,$patientName);
-      $stmt->execute($params);
-      $resultSet=$stmt->fetchALL();
-      return $resultSet;
-    }
-    catch(PDOException $e){
-    echo $e->getMessage();
-    }
-  }
-  function getDoctorAppointments($userName){
-    try{
-      $stmt=$this->conn->prepare("SELECT cons.*,pat.p_name FROM consultation cons
-      INNER JOIN patient pat on cons.patient_id=pat.patient_id
-      WHERE cons.username LIKE ?");
-      $params=array($userName);
-      $stmt->execute($params);
-      $resultSet=$stmt->fetchALL();
-      return $resultSet;
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getDoctorAppointmentByPatientName($userName,$patientName){
-    try{
-      $stmt=$this->conn->prepare("SELECT cons.*,pat.p_name FROM consultation cons
-      INNER JOIN patient pat on cons.patient_id=pat.patient_id
-      WHERE cons.username LIKE ? AND pat.p_name LIKE ?");
-      $patientName="%".$patientName."%";
-      $params=array($userName,$patientName);
-      $stmt->execute($params);
-      $resultSet=$stmt->fetchALL();
-      return $resultSet;
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getDrugByName($name){
-    try{
-      $stmt=$this->conn->prepare("SELECT * FROM drug WHERE name Like ?");
-      $name='%'.$name.'%';
-      $params=array($name);
-      $stmt->execute($params);
-      $resultSet=$stmt->fetchALL();
-      return $resultSet;
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getInventoryByName($name){
-    try{
-      $stmt=$this->conn->prepare("SELECT drug.*,SUM(inv.quantity) as stock FROM drug
-      INNER JOIN inventory inv ON drug.id=inv.drug_id
-      WHERE name Like ?
-      GROUP BY inv.drug_id");
-      $name='%'.$name.'%';
-      $params=array($name);
-      $stmt->execute($params);
-      $resultSet=$stmt->fetchALL();
-      return $resultSet;
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getLabTestByName($name){
-    try{
-      $stmt=$this->conn->prepare("SELECT * FROM laboratory
-      WHERE test Like ?");
-      $name='%'.$name.'%';
-      $params=array($name);
-      $stmt->execute($params);
-      $resultSet=$stmt->fetchALL();
-      return $resultSet;
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getSingleDrugByName($name){
-    try{
-      $stmt=$this->conn->prepare("SELECT * FROM drug WHERE name Like ? LIMIT 1");
-      $params=array($name);
-      $stmt->execute($params);
-      $stmt->setFetchMode(PDO::FETCH_ASSOC);
-      return $stmt->fetch();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getInventoryItemByName($name){
-    try{
-      $stmt=$this->conn->prepare("SELECT drug.*,SUM(inv.quantity) as stock FROM drug
-      INNER JOIN inventory inv ON drug.id=inv.drug_id
-      WHERE name Like ?
-      GROUP BY inv.drug_id LIMIT 1");
-      $params=array($name);
-      $stmt->execute($params);
-      $stmt->setFetchMode(PDO::FETCH_ASSOC);
-      return $stmt->fetch();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getSingleLabTestByName($name){
-    try{
-      $stmt=$this->conn->prepare("SELECT * FROM laboratory
-      WHERE test Like ? LIMIT 1");
-      $params=array($name);
-      $stmt->execute($params);
-      $stmt->setFetchMode(PDO::FETCH_ASSOC);
-      return $stmt->fetch();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getAllDose(){
-    try{
-      $stmt=$this->conn->prepare("SELECT * FROM dosage");
-      $stmt->execute();
-      $resultSet=$stmt->fetchALL();
-  		return $resultSet;
-    }
-    catch(PDOExcption $e){
-      echo $e->getMessage();
-    }
-  }
-  function getAllDurations(){
-    try{
-      $stmt=$this->conn->prepare("SELECT * FROM duration");
-      $stmt->execute();
-      $resultSet=$stmt->fetchALL();
-  		return $resultSet;
-    }
-    catch(PDOExcption $e){
-      echo $e->getMessage();
-    }
-  }
-  function savePrescription($patient,$observation,$user,$encounter){
-    try{
-      $date=$date=date('Y-m-d h:i:sa');
-      $stmt=$this->conn->prepare("INSERT INTO consultation (patient_id,observation,con_time,username,encounter_id) VALUES (?,?,?,?,?)");
-      $params=array($patient,$observation,$date,$user,$encounter);
-      $stmt->execute($params);
-      return $this->conn->lastInsertId();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function savePharmacyPrescriptionOrder($lastId,$drug,$dose,$duration){
-    try{
-      $medicine=$this->getSingleDrugByName($drug);
-      $stmt=$this->conn->prepare("INSERT INTO prescription_order (prescription_id,drug_id,dose,duration)
-      VALUES(?,?,?,?)");
-      $params=array($lastId,$medicine['id'],$dose,$duration);
+      $stmt=$this->conn->prepare("INSERT INTO securityroles (secrolename) VALUES (?)");
+      $params=array($roleName);
       $stmt->execute($params);
     }
     catch(PDOException $e){
-      echo $e->getMessage();
-    }
+			echo $e->getMessage();
+		}
   }
-  function saveLabTestPrescriptionOrder($lastId,$testId){
+  function addNewSecurityGroup($SelectedRole,$PageTokenId){
     try{
-      $test=$this->getSingleLabTestByName($testId);
-      $stmt=$this->conn->prepare("INSERT INTO lab_test_order (prescription_id,lab_test_id)
-      VALUES(?,?)");
-      $params=array($lastId,$test['lab_id']);
+      $stmt=$this->conn->prepare("INSERT INTO securitygroups (secroleid, tokenid) VALUES (?,?)");
+      $params=array($SelectedRole,$PageTokenId);
       $stmt->execute($params);
     }
     catch(PDOException $e){
-      echo $e->getMessage();
-    }
+			echo $e->getMessage();
+		}
   }
-  function getAllPharmacyQueue($userName){
+  function removeSecurityGroupByTokenId($SelectedRole,$PageTokenId){
     try{
-      $stmt=$this->conn->prepare("SELECT c.*,p.p_name FROM consultation c
-      INNER JOIN patient p ON c.patient_id=p.patient_id
-      where pharmacy_billed=? AND c.pharmacy_patient=?");
-      $params=array(0,1);
+      $stmt=$this->conn->prepare("DELETE FROM securitygroups WHERE secroleid =? AND tokenid =?");
+      $params=array($SelectedRole,$PageTokenId);
       $stmt->execute($params);
-      $resultSet=$stmt->fetchALL();
-  		return $resultSet;
     }
     catch(PDOException $e){
-      echo $e->getMessage();
-    }
+			echo $e->getMessage();
+		}
   }
-  function getPharmacyQueue($userName,$patientName){
+  function removeSecurityGroup($SelectedRole){
     try{
-      $stmt=$this->conn->prepare("SELECT c.* FROM consultation c
-      INNER JOIN patient p ON c.patient_id=p.patient_id
-      where c.pharmacy_billed=? AND c.pharmacy_patient=? AND p.p_name LIKE ?");
-      $patientName='%'.$patientName.'%';
-      $params=array(0,1,$patientName);
+      $stmt=$this->conn->prepare("DELETE FROM securitygroups WHERE secroleid=?");
+      $params=array($SelectedRole);
       $stmt->execute($params);
-      $resultSet=$stmt->fetchALL();
-  		return $resultSet;
     }
     catch(PDOException $e){
-      echo $e->getMessage();
-    }
+			echo $e->getMessage();
+		}
   }
-  function getLaboratoryQueue($userName,$patientName){
+  function removeSecurityRole($SelectedRole){
     try{
-      $stmt=$this->conn->prepare("SELECT c.* FROM consultation c
-      INNER JOIN patient p ON c.patient_id=p.patient_id
-      where c.lab_billed=? AND c.lab_patient=? AND p.p_name LIKE ?");
-      $patientName='%'.$patientName.'%';
-      $params=array(0,1,$patientName);
+      $stmt=$this->conn->prepare("DELETE FROM securityroles WHERE secroleid=?");
+      $params=array($SelectedRole);
       $stmt->execute($params);
-      $resultSet=$stmt->fetchALL();
-  		return $resultSet;
     }
     catch(PDOException $e){
-      echo $e->getMessage();
-    }
+			echo $e->getMessage();
+		}
   }
-  function getAllLabQueue(){
+  function numberOfUsersOnSecurityRole($SelectedRole){
     try{
-      $stmt=$this->conn->prepare("SELECT c.*,p.p_name FROM consultation c
-      INNER JOIN patient p ON c.patient_id=p.patient_id
-      where lab_billed=? AND c.lab_patient=?");
-      $params=array(0,1);
-      $stmt->execute($params);
-      $resultSet=$stmt->fetchALL();
-  		return $resultSet;
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getPrescriptionById($id){
-    try{
-      $stmt=$this->conn->prepare("SELECT * FROM consultation WHERE prescription_id=?");
-      $params=array($id);
-      $stmt->execute($params);
-      $stmt->setFetchMode(PDO::FETCH_ASSOC);
-      return $stmt->fetch();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getPrescriptionDetailsById($id){
-    try{
-      $stmt=$this->conn->prepare("SELECT d.id,d.name,SUM(inv.quantity) as quantity,d.buying_price,d.selling_price,p.dose,p.duration
-      FROM prescription_order p
-      INNER JOIN drug d on p.drug_id=d.id
-      INNER JOIN inventory inv ON d.id=inv.drug_id
-      WHERE p.prescription_id=?
-      GROUP BY inv.drug_id");
-      $params=array($id);
+      $stmt=$this->conn->prepare("SELECT COUNT(*) FROM user WHERE secroleid=?");
+      $params=array($SelectedRole);
       $stmt->execute($params);
       return $stmt->fetchALL();
     }
     catch(PDOException $e){
-      echo $e->getMessage();
-    }
+			echo $e->getMessage();
+		}
   }
-  function getLabOrderByPrescriptionId($id){
+  function getAllSecurityRoles(){
     try{
-      $stmt=$this->conn->prepare("SELECT lab.*
-      FROM lab_test_order lto
-      INNER JOIN laboratory lab ON lto.lab_test_id=lab.lab_id
-      WHERE lto.prescription_id=?");
-      $params=array($id);
+      $stmt=$this->conn->prepare("SELECT secroleid,secrolename FROM securityroles ORDER BY secroleid");
+      $stmt->execute();
+      return $stmt->fetchALL();
+    }
+    catch(PDOException $e){
+			echo $e->getMessage();
+		}
+  }
+  function getAllPrivileges(){
+    try{
+      $stmt=$this->conn->prepare("SELECT tokenid, tokenname FROM securitytokens");
+      $stmt->execute();
+      return $stmt->fetchALL();
+    }
+    catch(PDOException $e){
+			echo $e->getMessage();
+		}
+  }
+  function getPrivilegesByRole($SelectedRole){
+    try{
+      $stmt=$this->conn->prepare("SELECT tokenid FROM securitygroups WHERE secroleid=?");
+      $params=array($SelectedRole);
       $stmt->execute($params);
       return $stmt->fetchALL();
     }
     catch(PDOException $e){
-      echo $e->getMessage();
-    }
+			echo $e->getMessage();
+		}
   }
-  function dispensePrescription($prescriptionId,$drug,$dose,$duration,$quantity,$amount,$user){
+  function getRoleById($SelectedRole){
     try{
-      $stmt=$this->conn->prepare("INSERT INTO prescription_dispensed (prescription_id,drug_id,dose,duration,quantity,amount_paid,username)
-      VALUES (?,?,?,?,?,?,?)");
-      $params=array($prescriptionId,$drug,$dose,$duration,$quantity,$amount,$user);
+      $stmt=$this->conn->prepare("SELECT secroleid,secrolename FROM securityroles WHERE secroleid=?");
+      $params=array($SelectedRole);
       $stmt->execute($params);
+      $stmt->setFetchMode(PDO::FETCH_ASSOC);
+      return $stmt->fetch();
     }
     catch(PDOException $e){
-      echo $e->getMessage();
-    }
+			echo $e->getMessage();
+		}
   }
-  function billPharmacyPrescription($prescriptionId,$drug,$dose,$duration,$quantity,$cost,$amount,$user,$collectedByNurse){
+  function addNewProduct($name,$bPrice,$sPrice,$description,$company,$category){
     try{
-      $date=date('Y-m-d');
-      $stmt=$this->conn->prepare("INSERT INTO prescription_dispensed (prescription_id,drug_id,dose,duration,quantity,cost,amount,username,date_dispensed,collected_by_nurse)
-      VALUES (?,?,?,?,?,?,?,?,?,?)");
-      $params=array($prescriptionId,$drug,$dose,$duration,$quantity,$cost,$amount,$user,$date,$collectedByNurse);
-      $stmt->execute($params);
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function billLabTestOrder($prescriptionId,$test,$cost,$result,$user){
-    try{
-      $stmt=$this->conn->prepare("INSERT INTO lab_order_dispensed (prescription_id,lab_test_id,cost,result,username)
-      VALUES (?,?,?,?,?)");
-      $params=array($prescriptionId,$test,$cost,$result,$user);
-      $stmt->execute($params);
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function pharmacyBilled($prescriptionId){
-    try{
-      $stmt=$this->conn->prepare("UPDATE consultation SET pharmacy_billed=? WHERE prescription_id=?");
-      $status=1;
-      $params=array($status,$prescriptionId);
-      $stmt->execute($params);
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function laboratoryBilled($prescriptionId){
-    try{
-      $stmt=$this->conn->prepare("UPDATE consultation SET lab_billed=? WHERE prescription_id=?");
-      $status=1;
-      $params=array($status,$prescriptionId);
-      $stmt->execute($params);
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function addNewDrug($name,$bPrice,$sPrice,$description,$company,$category){
-    try{
-      $stmt=$this->conn->prepare("INSERT INTO drug (name,buying_price,selling_price,description,company,category)
+      $stmt=$this->conn->prepare("INSERT INTO product (name,buying_price,selling_price,description,company,category)
       VALUES(?,?,?,?,?,?)");
       $params=array($name,$bPrice,$sPrice,$description,$company,$category);
       $stmt->execute($params);
@@ -707,11 +463,206 @@ public function fingerprint(){
       echo $e->getMessage();
     }
   }
-  function getAllDrugCategory(){
+  function getAllProductCategory(){
     try{
-      $stmt=$this->conn->prepare("SELECT * FROM drug_category");
+      $stmt=$this->conn->prepare("SELECT * FROM product_category");
       $stmt->execute();
       return $stmt->fetchALL();
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function getInventoryItemByName($name){
+    try{
+      $stmt=$this->conn->prepare("SELECT product.*,SUM(inv.quantity) as stock FROM product
+      INNER JOIN inventory inv ON product.id=inv.product_id
+      WHERE product.name Like ?
+      GROUP BY inv.product_id LIMIT 1");
+      $params=array($name);
+      $stmt->execute($params);
+      $stmt->setFetchMode(PDO::FETCH_ASSOC);
+      return $stmt->fetch();
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function getInventoryByName($name){
+    try{
+      $stmt=$this->conn->prepare("SELECT product.*,SUM(inv.quantity) as stock FROM product
+      INNER JOIN inventory inv ON product.id=inv.product_id
+      WHERE name Like ?
+      GROUP BY inv.product_id");
+      $name='%'.$name.'%';
+      $params=array($name);
+      $stmt->execute($params);
+      $resultSet=$stmt->fetchALL();
+      return $resultSet;
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function saveSalesOrder($entry_date,$client){
+    try{
+      $stmt=$this->conn->prepare("INSERT INTO sales_order (date_required,client) VALUES (?,?)");
+      $params=array($entry_date,$client);
+      $stmt->execute($params);
+      return $this->conn->lastInsertId();
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function saveSalesOrderDetails($lastId,$productId,$quantity,$price,$amount,$discount,$dispatch){
+    try{
+      $stmt=$this->conn->prepare("INSERT INTO sales_order_details (sales_order_id,product_id,quantity,price,amount,discount,quantity_delivered)
+      VALUES (?,?,?,?,?,?,?)");
+      $params=array($lastId,$productId,$quantity,$price,$amount,$discount,$dispatch);
+      $stmt->execute($params);
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function dispatchSalesOrderProducts($orderId,$quantity,$product_id){
+    try{
+      $stmt=$this->conn->prepare("UPDATE sales_order_details SET quantity_delivered=? WHERE sales_order_id=? AND product_id=?");
+      $params=array($quantity,$orderId,$product_id);
+      $stmt->execute($params);
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function saveClientOrderDetails($lastId,$productId,$quantity,$price,$amount,$discount){
+    try{
+      $stmt=$this->conn->prepare("INSERT INTO sales_order_details (sales_order_id,product_id,quantity,price,amount,discount)
+       VALUES (?,?,?,?,?,?)");
+      $params=array($lastId,$productId,$quantity,$price,$amount,$discount);
+      $stmt->execute($params);
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function getSingleProductByName($name){
+    try{
+      $stmt=$this->conn->prepare("SELECT * FROM product WHERE name Like ? LIMIT 1");
+      $params=array($name);
+      $stmt->execute($params);
+      $stmt->setFetchMode(PDO::FETCH_ASSOC);
+      return $stmt->fetch();
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function getSalesOrderById($id){
+    try{
+      $stmt=$this->conn->prepare("SELECT * FROM sales_order WHERE sales_order_id=? LIMIT 1");
+      $params=array($id);
+      $stmt->execute($params);
+      $stmt->setFetchMode(PDO::FETCH_ASSOC);
+      return $stmt->fetch();
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function getSalesOderDetailsByOrderId($id){
+    try{
+      $stmt=$this->conn->prepare("SELECT sod.quantity,sod.quantity_delivered,sod.price,p.name,p.id FROM  sales_order_details sod
+      INNER JOIN product p ON sod.product_id=p.id
+      WHERE sales_order_id=?");
+      $params=array($id);
+      $stmt->execute($params);
+      return $stmt->fetchALL();
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function updateSalesOrderById($date,$id){
+    try{
+      $stmt=$this->conn->prepare("UPDATE sales_order SET date_required=? WHERE sales_order_id=?");
+      $params=array($date,$id);
+      $stmt->execute($params);
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function updateClientOrderById($date,$id){
+    try{
+      $stmt=$this->conn->prepare("UPDATE sales_order SET date_required=? WHERE sales_order_id=?");
+      $params=array($date,$id);
+      $stmt->execute($params);
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function removeSalesOderDetailsByOrderId($id){
+    try{
+      $stmt=$this->conn->prepare("DELETE FROM sales_order_details WHERE sales_order_id=?");
+      $params=array($id);
+      $stmt->execute($params);
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function getAllUsers(){
+    try{
+      $stmt=$this->conn->prepare("SELECT * FROM user");
+      $stmt->execute();
+      return $stmt->fetchALL();
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function saveNewUser($user_name,$user_pw,$secroleid){
+    try{
+      $date=date('Y-m-d');
+      $stmt=$this->conn->prepare("INSERT INTO user (user_name,user_pw,secroleid,date_created) VALUES(?,?,?,?)");
+       $params=array($user_name,$user_pw,$secroleid,$date);
+       $stmt->execute($params);
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function updateUser($userId,$user_pw,$secroleid){
+    try{
+      $date=date('Y-m-d');
+      $stmt=$this->conn->prepare("UPDATE user SET user_pw =?,secroleid =?,date_created = ? WHERE user_id=?");
+       $params=array($user_pw,$secroleid,$date,$userId);
+       $stmt->execute($params);
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function getClientByOrderId($id){
+    try{
+      $stmt=$this->conn->prepare("SELECT client FROM sales_order WHERE sales_order_id=?");
+      $params=array($id);
+      $stmt->execute($params);
+      $stmt->setFetchMode(PDO::FETCH_ASSOC);
+      return $stmt->fetch();
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function deductFromStockFromInventory($quantity,$product){
+    try{
+      $stmt=$this->conn->prepare("UPDATE inventory SET quantity=quantity-? WHERE product_id=?");
+      $params=array($quantity,$product);
+      $stmt->execute($params);
     }
     catch(PDOException $e){
       echo $e->getMessage();
@@ -722,6 +673,18 @@ public function fingerprint(){
       $stmt=$this->conn->prepare("SELECT * FROM supplier");
       $stmt->execute();
       return $stmt->fetchALL();
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function getPurchaseOrderById($id){
+    try{
+      $stmt=$this->conn->prepare("SELECT * FROM purchase_order WHERE purchase_order_id=? LIMIT 1");
+      $params=array($id);
+      $stmt->execute($params);
+      $stmt->setFetchMode(PDO::FETCH_ASSOC);
+      return $stmt->fetch();
     }
     catch(PDOException $e){
       echo $e->getMessage();
@@ -738,460 +701,11 @@ public function fingerprint(){
       echo $e->getMessage();
     }
   }
-  function saveInventory($lastId,$drugName,$quantity,$expiry_date,$batch_no){
+  function saveInventory($lastId,$productName,$quantity,$expiry_date,$batch_no){
     try{
-      $drug=$this->getSingleDrugByName($drugName);
-      $stmt=$this->conn->prepare("INSERT INTO inventory (purchase_order_id,drug_id,quantity,expiry_date,batch_no) VALUES (?,?,?,?,?)");
-      $params=array($lastId,$drug['id'],$quantity,$expiry_date,$batch_no);
-      $stmt->execute($params);
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getAllBloodGroups(){
-    try{
-      $stmt=$this->conn->prepare("SELECT * FROM blood_group");
-      $stmt->execute();
-      return $stmt->fetchALL();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function savePatient($name,$age,$bloodGroup,$phone,$address){
-    try{
-      $stmt=$this->conn->prepare("INSERT INTO patient (p_name,age,blood_group,phno,address) VALUES (?,?,?,?,?)");
-      $params=array($name,$age,$bloodGroup,$phone,$address);
-      $stmt->execute($params);
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function updatePatient($id,$name,$age,$bloodGroup,$phone,$address){
-    try{
-      $stmt=$this->conn->prepare("UPDATE patient SET p_name=?,age=?,blood_group=?,phno=?,address=? WHERE patient_id=?");
-      $params=array($name,$age,$bloodGroup,$phone,$address,$id);
-      $stmt->execute($params);
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function saveEncounter($weight,$temperature,$bloodPressure,$pulse,$respiration,$user,$patient){
-    try{
-      $date=date('Y-m-d h:i:sa');
-      $stmt=$this->conn->prepare("INSERT INTO encounter (weight,temperature,blood_pressure,pulse,respiration,added_by,time_created,patient_id)
-      VALUES(?,?,?,?,?,?,?,?)");
-      $params=array($weight,$temperature,$bloodPressure,$pulse,$respiration,$user,$date,$patient);
-      $stmt->execute($params);
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getAllEncounters(){
-    try{
-      $stmt=$this->conn->prepare("SELECT enc.*,pa.p_name FROM encounter enc
-      INNER JOIN patient pa ON enc.patient_id=pa.patient_id");
-      $stmt->execute();
-      return $stmt->fetchALL();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getPatientEncounters($nameOrId){
-    try{
-      $stmt=$this->conn->prepare("SELECT enc.*,pa.p_name FROM encounter enc
-      INNER JOIN patient pa ON pa.patient_id=enc.patient_id
-      WHERE pa.p_name LIKE ? OR pa.patient_id=?
-      ORDER BY enc.encounter_id DESC");
-      $params=array($nameOrId.'%',$nameOrId);
-      $stmt->execute();
-      return $stmt->fetchALL();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getPatientPendingEncounters($nameOrId){
-    try{
-      $stmt=$this->conn->prepare("SELECT enc.*,pa.p_name FROM encounter enc
-      INNER JOIN patient pa ON pa.patient_id=enc.patient_id
-      WHERE pa.p_name LIKE ? OR pa.patient_id=?
-      AND enc.open=1
-      ORDER BY enc.encounter_id DESC");
-      $params=array('%'.$nameOrId.'%',$nameOrId);
-      $stmt->execute($params);
-      return $stmt->fetchALL();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getPatientActiveEncounter($nameOrId){
-    try{
-      $stmt=$this->conn->prepare("SELECT enc.*,pa.p_name FROM encounter enc
-      INNER JOIN patient pa ON pa.patient_id=enc.patient_id
-      WHERE pa.p_name LIKE ? OR pa.patient_id=?
-      AND enc.open=?
-      ORDER BY enc.encounter_id DESC");
-      $params=array('%'.$nameOrId.'%',$nameOrId,1);
-      $stmt->execute($params);
-      return $stmt->fetchALL();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getPatientActiveEncounterList(){
-    try{
-      $stmt=$this->conn->prepare("SELECT enc.*,pa.p_name FROM encounter enc
-      INNER JOIN patient pa ON pa.patient_id=enc.patient_id
-      WHERE enc.open=?
-      ORDER BY enc.encounter_id DESC");
-      $params=array(1);
-      $stmt->execute($params);
-      return $stmt->fetchALL();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getAdmissionList(){
-    try{
-      $stmt=$this->conn->prepare("SELECT ad.*,pa.p_name FROM admission ad
-      INNER JOIN patient pa ON ad.patient_id=pa.patient_id
-      WHERE ad.discharged=?
-      ORDER BY ad.id DESC");
-      $params=array(0);
-      $stmt->execute($params);
-      return $stmt->fetchALL();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getEncounterByID($id){
-    try{
-      $stmt=$this->conn->prepare("SELECT enc.*,pa.p_name FROM encounter enc
-      INNER JOIN patient pa ON enc.patient_id=enc.patient_id WHERE encounter_id=?");
-      $params=array($id);
-      $stmt->execute($params);
-      $stmt->setFetchMode(PDO::FETCH_ASSOC);
-      return $stmt->fetch();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function updateEncounter($weight,$temperature,$bloodPressure,$pulse,$respiration,$user,$id){
-    try{
-      $stmt=$this->conn->prepare("UPDATE encounter SET weight=?,temperature=?,blood_pressure=?,pulse=?,respiration=?,updated_by=? WHERE encounter_id=?");
-      $params=array($weight,$temperature,$bloodPressure,$pulse,$respiration,$user,$id);
-      $stmt->execute($params);
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function seenDoctor($encounter,$prescriptionId){
-    try{
-      $stmt=$this->conn->prepare("UPDATE encounter SET seen_doctor=?,prescription_id=? WHERE encounter_id=?");
-      $status=1;
-      $params=array($status,$prescriptionId,$encounter);
-      $stmt->execute($params);
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getDrugActiveBatches($id){
-    try{
-      $stmt=$this->conn->prepare("SELECT batch_no,id FROM inventory
-      WHERE drug_id=? AND quantity>?
-      ORDER BY expiry_date");
-      $quantity=0;
-      $params=array($id,$quantity);
-      $stmt->execute($params);
-      return $stmt->fetchALL();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function deductStockFromInventory($inventoryId,$requiredQuantity,$drug_id){
-    try{
-      $stmt=$this->conn->prepare("SELECT quantity FROM inventory WHERE id=?");
-      $params=array($inventoryId);
-      $stmt->execute($params);
-      $stmt->setFetchMode(PDO::FETCH_ASSOC);
-      $result=$stmt->fetch();
-
-      $batchQuantity=$result['quantity'];
-      if($requiredQuantity<$batchQuantity || $requiredQuantity==$batchQuantity){
-        $stmt=$this->conn->prepare("UPDATE inventory SET quantity=quantity-?
-        WHERE id=?");
-        $params=array($requiredQuantity,$inventoryId);
-        $stmt->execute($params);
-      }
-      else{
-        $stmt=$this->conn->prepare("UPDATE inventory SET quantity=quantity-?
-        WHERE id=?");
-        $params=array($batchQuantity,$inventoryId);
-        $stmt->execute($params);
-        $balance=$requiredQuantity-$batchQuantity;
-        $batches=$this->getDrugActiveBatches($drug_id);
-        foreach($batches as $batch){
-          if($balance>0){
-          if($batch['quantity']){}
-          $stmt=$this->conn->prepare("UPDATE inventory SET quantity=quantity-?
-          WHERE id=?");
-          $params=array($batchQuantity,$inventoryId);
-          $stmt->execute($params);
-        }
-        }
-      }
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function updatePharmacyPatientStatus($id){
-    try{
-      $stmt=$this->conn->prepare("UPDATE consultation SET pharmacy_patient=? WHERE prescription_id=?");
-      $params=array(1,$id);
-      $stmt->execute($params);
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function updateLabPatientStatus($id){
-    try{
-      $stmt=$this->conn->prepare("UPDATE consultation SET lab_patient=? WHERE prescription_id=?");
-      $params=array(1,$id);
-      $stmt->execute($params);
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function doctorAllowAdmission($id){
-    try{
-      $stmt=$this->conn->prepare("UPDATE encounter SET admit=? WHERE encounter_id=?");
-      $params=array(1,$id);
-      $stmt->execute($params);
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getAllInsuranceCompanies(){
-    try{
-      $stmt=$this->conn->prepare("SELECT * FROM insurance_company");
-      $stmt->execute();
-      return $stmt->fetchALL();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getAllAllergies(){
-    try{
-      $stmt=$this->conn->prepare("SELECT * FROM allergy");
-      $stmt->execute();
-      return $stmt->fetchALL();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getAllWards(){
-    try{
-      $stmt=$this->conn->prepare("SELECT * FROM ward");
-      $stmt->execute();
-      return $stmt->fetchALL();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function updateToInpatient($encounterId){
-    try{
-      $stmt=$this->conn->prepare("UPDATE encounter SET admitted=? WHERE encounter_id=?");
-      $params=array(1,$encounterId);
-      $stmt->execute($params);
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function admitPatient($encounterId,$patient_id,$allergy,$insurance,$noOfAdmissions,$ward,$bedNo,$insurancePatient){
-    try{
-      $date=date('Y-m-d');
-      $stmt=$this->conn->prepare("INSERT INTO admission (encounter_id,patient_id,allergy,insurance,no_of_admissions,ward,bed_no,admission_date,insurance_patient)
-      VALUES(?,?,?,?,?,?,?,?,?)");
-      $params=array($encounterId,$patient_id,$allergy,$insurance,$noOfAdmissions,$ward,$bedNo,$date,$insurancePatient);
-      $stmt->execute($params);
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getAllergyById($id){
-    try{
-      $stmt=$this->conn->prepare("SELECT * FROM allergy WHERE id=?");
-      $params=array($id);
-      $stmt->execute($params);
-      $stmt->setFetchMode(PDO::FETCH_ASSOC);
-      return $stmt->fetch();
-      }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getWardById($id){
-    try{
-      $stmt=$this->conn->prepare("SELECT * FROM ward WHERE id=?");
-      $params=array($id);
-      $stmt->execute($params);
-      $stmt->setFetchMode(PDO::FETCH_ASSOC);
-      return $stmt->fetch();
-      }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getPharmacyOrdersByEncounterId($encounterId){
-    try{
-      $stmt=$this->conn->prepare("SELECT * FROM consultation WHERE encounter_id=? AND pharmacy_patient=?");
-      $params=array($encounterId,1);
-      $stmt->execute($params);
-      return $stmt->fetchALL();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getPharmacyDispensedByEncounterId($encounterId){
-    try{
-      $stmt=$this->conn->prepare("SELECT pd.*,d.name as dname FROM prescription_dispensed pd
-      INNER JOIN consultation c ON pd.prescription_id=c.prescription_id
-      INNER JOIN drug d ON pd.drug_id=d.id
-      WHERE c.encounter_id=? AND pharmacy_patient=?");
-      $params=array($encounterId,1);
-      $stmt->execute($params);
-      return $stmt->fetchALL();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getPharmacyOrdersDispensedByPrescriptionId($prescriptionId){
-    try{
-      $stmt=$this->conn->prepare("SELECT pd.prescription_id,SUM(pd.amount) as amount,d.name as dname,d.id as drugId FROM prescription_dispensed pd
-      INNER JOIN drug d ON pd.drug_id=d.id
-      WHERE pd.prescription_id=? GROUP BY pd.drug_id");
-      $params=array($prescriptionId);
-      $stmt->execute($params);
-      return $stmt->fetchALL();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getLabOrdersByEncounterId($encounterId){
-    try{
-      $stmt=$this->conn->prepare("SELECT * FROM consultation WHERE encounter_id=? AND lab_patient=?");
-      $params=array($encounterId,1);
-      $stmt->execute($params);
-      return $stmt->fetchALL();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getLabOrdersDispensedByPrescriptionId($prescriptionId){
-    try{
-      $stmt=$this->conn->prepare("SELECT lab.lab_id,lab.cost as cost,lab.test as test,lod.prescription_id FROM lab_order_dispensed lod
-      INNER JOIN laboratory lab ON lod.lab_test_id=lab.lab_id
-      WHERE lod.prescription_id=?");
-      $params=array($prescriptionId);
-      $stmt->execute($params);
-      return $stmt->fetchALL();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getLabTestsByEncounterId($encounterId){
-    try{
-      $stmt=$this->conn->prepare("SELECT lod.*,lab.test as test FROM lab_order_dispensed lod
-      INNER JOIN consultation c ON lod.prescription_id=c.prescription_id
-      INNER JOIN laboratory lab ON lod.lab_test_id=lab.lab_id
-      WHERE c.encounter_id=? AND lab_patient=?");
-      $params=array($encounterId,1);
-      $stmt->execute($params);
-      return $stmt->fetchALL();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function getPatientHistory($patientId){
-    try{
-      $stmt=$this->conn->prepare("SELECT * FROM encounter WHERE patient_id=?");
-      $params=array($patientId);
-      $stmt->execute($params);
-      return $stmt->fetchALL();
-    }
-    catch(PDOException $e){
-      echo $e->getMessage();
-    }
-  }
-  function receivePharmacyPayment($prescriptionId,$itemId,$cost,$user){
-    try{
-    $date=date('Y-m-d');
-    $stmt=$this->conn->prepare("INSERT INTO pharmacy_payment (prescription_id,item_id,amount,date_paid,received_by)
-    VALUES(?,?,?,?,?)");
-    $params=array($prescriptionId,$itemId,$cost,$date,$user);
-    $stmt->execute($params);
-  }
-  catch(PDOException $e){
-    echo $e->getMessage();
-  }
-  }
-  function receiveLabTestPayment($prescriptionId,$itemId,$cost,$user){
-    try{
-    $date=date('Y-m-d');
-    $stmt=$this->conn->prepare("INSERT INTO lab_test_payment (prescription_id,test_id,cost,date_paid,received_by)
-    VALUES(?,?,?,?,?)");
-    $params=array($prescriptionId,$itemId,$cost,$date,$user);
-    $stmt->execute($params);
-  }
-  catch(PDOException $e){
-    echo $e->getMessage();
-  }
-  }
-  function chargeConsultationFee($prescriptionId,$itemId,$cost,$user){
-    try{
-    $date=date('Y-m-d');
-    $stmt=$this->conn->prepare("INSERT INTO hospital_charges_payment (prescription_id,item_id,cost,date_paid,received_by)
-    VALUES(?,?,?,?,?)");
-    $params=array($prescriptionId,$itemId,$cost,$date,$user);
-    $stmt->execute($params);
-  }
-  catch(PDOException $e){
-    echo $e->getMessage();
-  }
-  }
-  function clearBill($encounterId){
-    try{
-      $stmt=$this->conn->prepare("UPDATE encounter SET bill_cleared=? WHERE encounter_id=?");
-      $params=array(1,$encounterId);
+      $product=$this->getProductByName($productName);
+      $stmt=$this->conn->prepare("INSERT INTO inventory (purchase_order_id,product_id,quantity,expiry_date,batch_no) VALUES (?,?,?,?,?)");
+      $params=array($lastId,$product['id'],$quantity,$expiry_date,$batch_no);
       $stmt->execute($params);
     }
     catch(PDOException $e){

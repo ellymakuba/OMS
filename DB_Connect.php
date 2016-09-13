@@ -6,7 +6,7 @@ class DB_Connect {
         //require_once 'config/config.php';
         // Connecting to mysql database
 		try{
-        $this->conn = new PDO("mysql:host=localhost;dbname=hospital_management", 'root', '');
+        $this->conn = new PDO("mysql:host=localhost;dbname=hospital_ordering", 'root', '');
 		$this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         return $this->conn;
 		}

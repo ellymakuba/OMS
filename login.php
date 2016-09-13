@@ -9,7 +9,6 @@
 		$username = $_POST['log_user'];
 		$password = $_POST['log_pw'];
 		$fingerprint=$functionObject->fingerprint();
-		// Select user details from USER
 		$user=$functionObject->getUserByUsernameAndPassword($username, $password);
 		if($user){
 			// Define Session Variables for this User
@@ -22,7 +21,14 @@
 			$_SESSION['log_report'] = $user['ugroup_report'];
 			$_SESSION['log_fingerprint'] = $fingerprint;
 			// Forward to start.php
-			header('Location: patient_list.php');
+			$functionObject->getUserByUserName($_SESSION['log_user']);
+	    $functionObject->getUserRole($_SESSION['user']['user_id']);
+			if($_SESSION['secroleId']==7){
+			header('Location:client_orders.php');
+			}
+			else{
+			header('Location:manage_orders.php');
+			}
 		}
 		else $functionObject->showMessage('Authentification failed!\nWrong Username and/or Password!');
 	}

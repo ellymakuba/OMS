@@ -3,10 +3,10 @@ require 'functions.php';
 $fO=new functions();
 $fO->checkLogin();
 $q=$_GET['term'];
-$drugs=$fO->getInventoryByName($q);
-foreach($drugs as $drug)
+$inventories=$fO->getInventoryByName($q);
+foreach($inventories as $inventory)
 {
- $obj[]=array('id' => $drug['id'],'name' => $drug['name'],'stock' => $drug['stock']);
+ $obj[]=array('id' => $inventory['id'],'name' => $inventory['name'],'stock' => $inventory['stock']);
 }
 print json_encode($obj);
 ?>
