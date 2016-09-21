@@ -7,11 +7,11 @@
   <?PHP $fO->includeHead('Sales Order List',0) ?>
   </head>
   <body class="container">
-  <?PHP $fO->includeMenu(1); ?>
+  <?PHP $fO->includeMenu(2); ?>
 	<div id="menu_main">
-    <a href="manage_inventory.php" id="item_selected">Product List</a>
+    <a href="manage_inventory.php">Product List</a>
     <a href="product_details.php">Product Details</a>
-    <a href="purchase_order_list.php">Purchase Order List</a>
+    <a href="purchase_order_list.php" id="item_selected">Purchase Order List</a>
     <a href="purchase_order.php">Purchase Order</a>
     </div>
   <div class="table-responsive">

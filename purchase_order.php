@@ -3,7 +3,7 @@
 	require 'purchaseOrderCart.php';
 	$fO=new functions();
 	$fO->checkLogin();
-	if (isset($_POST['save'])){
+	if (isset($_POST['receive'])){
 		if(isset($_POST['entry_date']) && isset($_POST['supplier'])){
 			$entry_date=date('Y-m-d',strtotime($_POST['entry_date']));
 			$lastId=$fO->savePurchaseOrder($entry_date,$_POST['supplier']);
@@ -11,11 +11,41 @@
 		foreach($_POST['product'] as $value) {
 			if(isset($_POST['product'][$i]) && isset($_POST['quantity'][$i]) && isset($_POST['expiry_date'][$i]) && isset($_POST['batch_no'][$i])){
 				$expiry_date=date('Y-m-d',strtotime($_POST['expiry_date'][$i]));
+				$productExists=$fO->checkIfProductExistsInInventory($_POST['product'][$i]);
+				if($productExists['count']>0){
+					$fO->addStockToInventory($productExists['purchase_order_id'],$lastId,$_POST['batch_no'][$i],$_POST['product'][$i],
+					$_POST['quantity'][$i],$_POST['expiry_date'][$i]);
+				}
+				else{
 				$fO->saveInventory($lastId,$_POST['product'][$i],$_POST['quantity'][$i],$expiry_date,$_POST['batch_no'][$i]);
+			}
+			}
+			$i++;
+		}
+		unset($_SESSION['purchaseOrder']);
+		unset($_SESSION['existing_order']);
+		unset($_SESSION['purchaseOrderUpdated']);
+		header("Location:purchase_order_list.php");
+	}
+	}
+	if(isset($_POST['update']) && isset($_SESSION['existing_order'])){
+		$i=0;
+		if(isset($_POST['entry_date']) && isset($_POST['supplier'])){
+		$entry_date=date('Y-m-d',strtotime($_POST['entry_date']));
+		foreach($_POST['product'] as $value) {
+			if(isset($_POST['product'][$i]) && isset($_POST['quantity'][$i]) && isset($_POST['batch_no'][$i])){
+				$productExists=$fO->checkIfProductExistsInInventory($_POST['quantity'][$i]);
+				if(count($productExists)>0){
+					$fO->updatePurchaseOrder($_SESSION['existing_order'],$_POST['product'][$i],$_POST['quantity'][$i],$_POST['batch_no'][$i]);
+				}
 			}
 			$i++;
 		}
 	}
+	unset($_SESSION['purchaseOrder']);
+	unset($_SESSION['existing_order']);
+	unset($_SESSION['purchaseOrderUpdated']);
+	//header("Location:purchase_order_list.php");
 	}
   ?>
   <html>
@@ -182,45 +212,55 @@ document.getElementById("total").value=tAmount;
 						 }
 						if ($AlreadyOnThisCart!=1)
 						{
-							$_SESSION['purchaseOrder']->add_to_cart($product['id'],$quantity,$product['name'],$product['buying_price'],'','ABD',-1);
+							$_SESSION['purchaseOrder']->add_to_cart($product['id'],$quantity,$product['name'],$product['buying_price'],'','',-1);
 						}
 				}//end of if(isset($_POST['add_cart]))
 				echo '</form>';
+				if(!isset($_SESSION['purchaseOrderUpdated'])){
+					$_SESSION['purchaseOrderUpdated']=0;
+				}
 				if (isset($_GET['Delete']))
 				{
 					$_SESSION['purchaseOrder']->remove_from_cart($_GET['Delete']);
+					$_SESSION['purchaseOrderUpdated']=1;
 				}
 				if (isset($_GET['update_cart']) && isset($_SESSION['purchaseOrder']))
 				{
 					$_SESSION['purchaseOrder']->update_cart($_GET['update_cart'],$_GET['quantity']);
+					$_SESSION['purchaseOrderUpdated']=1;
 				}
 				if (isset($_GET['set_date']) && isset($_SESSION['purchaseOrder']))
 				{
 					$_SESSION['purchaseOrder']->setDeliveryDate($_GET['set_date']);
+					$_SESSION['purchaseOrderUpdated']=1;
 				}
 				if (isset($_GET['set_supplier']) && isset($_SESSION['purchaseOrder']))
 				{
 					$_SESSION['purchaseOrder']->setSupplier($_GET['set_supplier']);
+					$_SESSION['purchaseOrderUpdated']=1;
 				}
 				if (isset($_GET['set_batch']) && isset($_SESSION['purchaseOrder']))
 				{
 					$_SESSION['purchaseOrder']->setLineItemBatchNo($_GET['set_batch'],$_GET['batchNo']);
+					$_SESSION['purchaseOrderUpdated']=1;
 				}
 				if (isset($_GET['set_expiry_date']) && isset($_SESSION['purchaseOrder']))
 				{
 					$_SESSION['purchaseOrder']->setLineItemExpiryDate($_GET['set_expiry_date'],$_GET['expiry_date']);
+					$_SESSION['purchaseOrderUpdated']=1;
 				}
 				if(isset($_GET['SelectedOrder'])){
 					$client_username=$fO->getClientByOrderId($_GET['SelectedOrder']);
 					$_SESSION['client']=$client_username['client'];
 					$_SESSION['existing_order']=$_GET['SelectedOrder'];
-					if(!isset($_SESSION['purchaseOrder'])){
+					if($_SESSION['purchaseOrderUpdated']==0){
 					$_SESSION['purchaseOrder'] = new PurchaseOrderCart();
 					$purchaseOrder=$fO->getPurchaseOrderById($_GET['SelectedOrder']);
-					$orderProducts=$fO->getSalesOderDetailsByOrderId($purchaseOrder['purchase_order_id']);
-					$_SESSION['purchaseOrder']->orderDate=$purchaseOrder['date_required'];
+					$orderProducts=$fO->getPurchaseOderDetailsByOrderId($purchaseOrder['purchase_order_id']);
+					$_SESSION['purchaseOrder']->orderDate=$purchaseOrder['entry_date'];
+					$_SESSION['purchaseOrder']->setSupplier($purchaseOrder['supplier_id']);
 					foreach($orderProducts as $product){
-						$_SESSION['purchaseOrder']->add_to_cart($product['id'],0,$product['name'],$product['price'],0,$product['quantity_delivered'],$product['quantity'],-1);
+						$_SESSION['purchaseOrder']->add_to_cart($product['id'],$product['quantity'],$product['name'],$product['buying_price'],$product['expiry_date'],$product['batch_no'],-1);
 					}
 				}
 				}
@@ -235,7 +275,7 @@ document.getElementById("total").value=tAmount;
         <select  name="supplier" id="supplier" class="form-control" required>
           <option disabled selected>Select Supplier</option>
 					<?php
-					$suppliers=$fO->getAllSuppliesrs();
+					$suppliers=$fO->getAllSuppliers();
 					foreach($suppliers as $supplier){
 						if($_SESSION['purchaseOrder']->supplier==$supplier['id']){
 							echo '<option selected value="'.$supplier['id'].'">'.$supplier['name'].'</option>';
@@ -288,7 +328,10 @@ document.getElementById("total").value=tAmount;
  					 name="amount[]" id="amount_<?php echo $order->LineNumber ?>" style="margin-right:20px;margin-top:10px;" required=""/>
  				 </td>
 				 <?php
-				 echo "<td><a href='".$_SERVER['PHP_SELF']."?"."Delete=".$order->LineNumber ."'><span class='glyphicon glyphicon-trash'></span></a></td>";
+				 if(!isset($_SESSION['existing_order'])){
+				 echo "<td><a href='".$_SERVER['PHP_SELF']."?"."Delete=".$order->LineNumber ."'><span class='glyphicon glyphicon-trash'>
+				 </span></a></td>";
+			 }
 				echo '</tr>';
 			 }?>
         </tbody>
@@ -304,8 +347,14 @@ document.getElementById("total").value=tAmount;
 				<div id="result"></div>';
 				?>
 				<br><br>
-				<button type="submit" name="receive" id="order" class="btn btn-lg btn-primary"
-					style="display: block; margin: 0 auto;width:200px;"><span class="fa fa-times"></span>Receive Order</button>
+				<?php if(isset($_SESSION['existing_order'])){
+					echo '<button type="submit" name="update" id="order" class="btn btn-lg btn-primary"
+						style="display: block; margin: 0 auto;width:200px;"><span class="fa fa-times"></span>Update Order</button>';
+				}
+				else{
+					echo '<button type="submit" name="receive" id="order" class="btn btn-lg btn-primary"
+						style="display: block; margin: 0 auto;width:200px;"><span class="fa fa-times"></span>Receive Order</button>';
+				}?>
       </form>
   </body>
   </html>

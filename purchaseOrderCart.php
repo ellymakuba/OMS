@@ -9,17 +9,17 @@ Class PurchaseOrderCart {
 	var $Email;
 	Var $OrderNo;
 	var $supplier;
-	public function getSupplier(){
-		return $this->supplier;
-	}
-	public function setSupplier($suppier){
-		$this->supplier=$supplier;
-	}
 	function PurchaseOrderCart(){
 		$this->LineItems = array();
 		$this->total=0;
 		$this->ItemsOrdered=0;
 		$this->LineCounter=0;
+	}
+	public function getSupplier(){
+		return $this->supplier;
+	}
+	public function setSupplier($supplier){
+		$this->supplier=$supplier;
 	}
 	function add_to_cart($productID,$Qty,$Descr,$Price,$exp,$batch,$LineNumber=-1){
 		if (isset($productID) AND $productID!="" AND isset($Qty)){

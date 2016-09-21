@@ -3,20 +3,20 @@
 	require 'functions.php';
 	$fO=new functions();
 	$fO->checkLogin();
-	$users=$fO->getAllUsers();
+	$clients=$fO->getAllClients();
 ?>
 <html>
-	<?PHP $fO->includeHead('Settings | Users',1); ?>
+	<?PHP $fO->includeHead('Settings | Clients',1); ?>
 	<body class="container">
 		<?PHP
 				$fO->includeMenu(9);
 		?>
 		<div id="menu_main">
-			<a href="manage_settings.php" id="item_selected">Users List</a>
+			<a href="manage_settings.php">Users List</a>
 			<a href="user.php" >User</a>
       <a href="roles.php">Roles</a>
       <a href="privileges.php">Privileges</a>
-			<a href="client_list.php">Client List</a>
+			<a href="client_list.php" id="item_selected">Client List</a>
 			<a href="client.php">Client</a>
 		</div>
 		<div class="container">

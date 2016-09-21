@@ -25,7 +25,7 @@ public function getUserByUsernameAndPassword($username, $password){
         $params=array($userName);
         $stmt->execute($params);
         $stmt->setFetchMode(PDO::FETCH_ASSOC);
-		    $_SESSION['user']=$stmt->fetch();
+		    return $stmt->fetch();
       }
       catch(PDOException $e){
         echo $e->getMessage();
@@ -123,7 +123,7 @@ public function fingerprint(){
       <link rel="stylesheet" href="dist/css/bootstrap.min.css">
       <script src="dist/js/bootstrap.min.js"></script>
       <script src="bootbox.min.js"></script>
-			<title>webafriq Digital Ordering | '.$title.'</title>
+			<title>Aquadent Ordering System | '.$title.'</title>
 			<link rel="shortcut icon" href="" type="image/x-icon">
 			<link rel="stylesheet" href="css/mangoo.css" />
       <link rel="stylesheet" href="jquery/jquery-ui-1.11.4/jquery-ui.min.css">
@@ -177,14 +177,9 @@ public function fingerprint(){
 			';
 		if ($endFlag == 1) echo '</head>';
 	}
-
-/**
-	* Generate Menu bar
-	* @param int tab_no : Number of currently selected menu tab.
-	*/
 	function includeMenu($tab_no){
-    $this->getUserByUserName($_SESSION['log_user']);
-    $this->getUserRole($_SESSION['user']['user_id']);
+    $user=$this->getUserByUserName($_SESSION['log_user']);
+    $this->getUserRole($user['user_id']);
 		echo '
 		<!-- MENU HEADER -->
 		<div id="menu_header">
@@ -209,7 +204,7 @@ public function fingerprint(){
 				  if ($tab_no == 1) echo ' id="tab_selected"';
 				  echo '><a href="client_orders.php">Client Orders</a></li>';
         }
-        if($_SESSION['secroleId']==1){
+        else{
           echo '<li';
 				  if ($tab_no == 1) echo ' id="tab_selected"';
 				  echo '><a href="manage_orders.php">Orders</a></li>';
@@ -283,7 +278,7 @@ public function fingerprint(){
   }
   function getProductById($id){
     try{
-      $stmt=$this->conn->prepare("SELECT * FROM product WHERE id=?");
+      $stmt=$this->conn->prepare("SELECT * FROM product WHERE id=? LIMIT 1");
       $params=array($id);
       $stmt->execute($params);
       $stmt->setFetchMode(PDO::FETCH_ASSOC);
@@ -526,10 +521,21 @@ public function fingerprint(){
       echo $e->getMessage();
     }
   }
-  function dispatchSalesOrderProducts($orderId,$quantity,$product_id){
+  function productDeliveryProcessStarted($orderId){
     try{
-      $stmt=$this->conn->prepare("UPDATE sales_order_details SET quantity_delivered=? WHERE sales_order_id=? AND product_id=?");
-      $params=array($quantity,$orderId,$product_id);
+      $stmt=$this->conn->prepare("UPDATE sales_order SET delivery_started=? WHERE sales_order_id=?");
+      $params=array(1,$orderId);
+      $stmt->execute($params);
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function dispatchSalesOrderProducts($orderId,$quantity,$product_id,$payment){
+    try{
+      $stmt=$this->conn->prepare("UPDATE sales_order_details SET quantity_delivered=?,payment=payment+?
+      WHERE sales_order_id=? AND product_id=?");
+      $params=array($quantity,$payment,$orderId,$product_id);
       $stmt->execute($params);
     }
     catch(PDOException $e){
@@ -542,6 +548,74 @@ public function fingerprint(){
        VALUES (?,?,?,?,?,?)");
       $params=array($lastId,$productId,$quantity,$price,$amount,$discount);
       $stmt->execute($params);
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function updateClientOrderDetails($orderId,$productId,$quantity,$discount,$amount){
+    try{
+      $stmt=$this->conn->prepare("UPDATE sales_order_details SET quantity=?,discount=?,amount=?
+      WHERE sales_order_id=?
+      AND product_id=?");
+      $params=array($quantity,$discount,$amount,$orderId,$productId);
+      $stmt->execute($params);
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function updatePurchaseOrder($orderId,$productId,$quantity,$batch){
+    try{
+      $stmt=$this->conn->prepare("UPDATE inventory SET quantity=?,batch_no=?
+      WHERE purchase_order_id=?
+      AND product_id=?");
+      $params=array($quantity,$batch,$orderId,$productId);
+      $stmt->execute($params);
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function addStockToInventory($orderId,$lastId,$batch,$productId,$quantity,$expiryDate){
+    try{
+      $stmt=$this->conn->prepare("UPDATE inventory SET quantity=quantity+?,purchase_order_id=?,batch_no=?,expiry_date=?
+      WHERE purchase_order_id=?
+      AND product_id=?");
+      $params=array($quantity,$lastId,$batch,$expiryDate,$orderId,$productId);
+      $stmt->execute($params);
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function productAlreadyOnOrder($orderId,$productId){
+    try{
+      $stmt=$this->conn->prepare("SELECT product_id FROM sales_order_details
+      WHERE sales_order_id=? AND product_id=?");
+      $params=array($orderId,$productId);
+      $stmt->execute($params);
+      $stmt->setFetchMode(PDO::FETCH_ASSOC);
+      return $stmt->fetch();
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function checkIfProductExistsInInventory($productId){
+    try{
+      $stmt=$this->conn->prepare("SELECT COUNT(*) as count,purchase_order_id FROM inventory
+      WHERE product_id=?");
+      $params=array($productId);
+      $stmt->execute($params);
+      $stmt->setFetchMode(PDO::FETCH_ASSOC);
+      $resultSet=$stmt->fetch();
+      if($resultSet['count']>0){
+        return $resultSet;
+      }
+      else{
+        return 0;
+      }
     }
     catch(PDOException $e){
       echo $e->getMessage();
@@ -573,7 +647,7 @@ public function fingerprint(){
   }
   function getSalesOderDetailsByOrderId($id){
     try{
-      $stmt=$this->conn->prepare("SELECT sod.quantity,sod.quantity_delivered,sod.price,p.name,p.id FROM  sales_order_details sod
+      $stmt=$this->conn->prepare("SELECT sod.quantity,sod.quantity_delivered,sod.price,p.name,sod.payment,p.id FROM  sales_order_details sod
       INNER JOIN product p ON sod.product_id=p.id
       WHERE sales_order_id=?");
       $params=array($id);
@@ -624,22 +698,22 @@ public function fingerprint(){
       echo $e->getMessage();
     }
   }
-  function saveNewUser($user_name,$user_pw,$secroleid){
+  function getUsersWithClientSecurityRole(){
     try{
-      $date=date('Y-m-d');
-      $stmt=$this->conn->prepare("INSERT INTO user (user_name,user_pw,secroleid,date_created) VALUES(?,?,?,?)");
-       $params=array($user_name,$user_pw,$secroleid,$date);
-       $stmt->execute($params);
+      $stmt=$this->conn->prepare("SELECT * FROM user WHERE secroleId=?");
+      $params=array(7);
+      $stmt->execute($params);
+      return $stmt->fetchALL();
     }
     catch(PDOException $e){
       echo $e->getMessage();
     }
   }
-  function updateUser($userId,$user_pw,$secroleid){
+  function saveNewUser($user_name,$user_pw,$secroleid){
     try{
       $date=date('Y-m-d');
-      $stmt=$this->conn->prepare("UPDATE user SET user_pw =?,secroleid =?,date_created = ? WHERE user_id=?");
-       $params=array($user_pw,$secroleid,$date,$userId);
+      $stmt=$this->conn->prepare("INSERT INTO user (user_name,user_pw,secroleid,date_created) VALUES(?,?,?,?)");
+       $params=array($user_name,$user_pw,$secroleid,$date);
        $stmt->execute($params);
     }
     catch(PDOException $e){
@@ -658,7 +732,7 @@ public function fingerprint(){
       echo $e->getMessage();
     }
   }
-  function deductFromStockFromInventory($quantity,$product){
+  function deductStockFromInventory($quantity,$product){
     try{
       $stmt=$this->conn->prepare("UPDATE inventory SET quantity=quantity-? WHERE product_id=?");
       $params=array($quantity,$product);
@@ -668,7 +742,7 @@ public function fingerprint(){
       echo $e->getMessage();
     }
   }
-  function getAllSuppliesrs(){
+  function getAllSuppliers(){
     try{
       $stmt=$this->conn->prepare("SELECT * FROM supplier");
       $stmt->execute();
@@ -701,12 +775,157 @@ public function fingerprint(){
       echo $e->getMessage();
     }
   }
-  function saveInventory($lastId,$productName,$quantity,$expiry_date,$batch_no){
+  function saveInventory($lastId,$product,$quantity,$expiry_date,$batch_no){
     try{
-      $product=$this->getProductByName($productName);
       $stmt=$this->conn->prepare("INSERT INTO inventory (purchase_order_id,product_id,quantity,expiry_date,batch_no) VALUES (?,?,?,?,?)");
-      $params=array($lastId,$product['id'],$quantity,$expiry_date,$batch_no);
+      $params=array($lastId,$product,$quantity,$expiry_date,$batch_no);
       $stmt->execute($params);
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function getPurchaseOderDetailsByOrderId($id){
+    try{
+      $stmt=$this->conn->prepare("SELECT inv.quantity,inv.expiry_date,inv.batch_no,p.name,p.id,p.buying_price FROM  inventory inv
+      INNER JOIN product p ON inv.product_id=p.id
+      WHERE inv.purchase_order_id=?");
+      $params=array($id);
+      $stmt->execute($params);
+      return $stmt->fetchALL();
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function allDeliveriesMadeForSalesOrder($salesOrderId){
+    try{
+      $stmt=$this->conn->prepare("SELECT COUNT(*) as count FROM sales_order_details
+      WHERE sales_order_id=? AND quantity>quantity_delivered");
+      $params=array($salesOrderId);
+      $stmt->execute($params);
+      $stmt->setFetchMode(PDO::FETCH_ASSOC);
+      return $stmt->fetch();
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function allPaymentMadeForSalesOrder($salesOrderId){
+    try{
+      $stmt=$this->conn->prepare("SELECT COUNT(*) as count FROM sales_order_details
+      WHERE sales_order_id=? AND amount>payment");
+      $params=array($salesOrderId);
+      $stmt->execute($params);
+      $stmt->setFetchMode(PDO::FETCH_ASSOC);
+      return $stmt->fetch();
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function closeSalesOrder($salesOrderId){
+    try{
+      $stmt=$this->conn->prepare("UPDATE sales_order SET cleared=? WHERE sales_order_id=?");
+      $params=array(1,$salesOrderId);
+      $stmt->execute($params);
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function completeDelivery($salesOrderId){
+    try{
+      $stmt=$this->conn->prepare("UPDATE sales_order SET complete_delivery=? WHERE sales_order_id=?");
+      $params=array(1,$salesOrderId);
+      $stmt->execute($params);
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function clearSalesOrder($salesOrderId){
+    try{
+      $stmt=$this->conn->prepare("UPDATE sales_order SET cleared=? WHERE sales_order_id=?");
+      $params=array(1,$salesOrderId);
+      $stmt->execute($params);
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function getClientOrderingValidity($user){
+    try{
+      $stmt=$this->conn->prepare("SELECT COUNT(*) as count FROM sales_order WHERE client=? AND cleared=?");
+      $params=array($user,0);
+      $stmt->execute($params);
+      $stmt->setFetchMode(PDO::FETCH_ASSOC);
+      return $stmt->fetch();
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function updateUser($user,$password,$role){
+    try{
+      $date=date('Y-m-d');
+      $stmt=$this->conn->prepare("UPDATE user SET user_pw=?,secroleid=?,date_created=? WHERE user_name=?");
+      $params=array($password,$role,$date,$user);
+      $stmt->execute($params);
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function saveNewClient($name,$address,$phoneNo,$user){
+    try{
+      $stmt=$this->conn->prepare("INSERT INTO client (name,address,phone_no,user_name) VALUES(?,?,?,?)");
+      $params=array($name,$address,$phoneNo,$user);
+      $stmt->execute($params);
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function updateClient($client_id,$name,$address,$phoneNo,$user){
+    try{
+      $stmt=$this->conn->prepare("UPDATE cleint SET name=?,address=?,phone_no=?,user_name=? WHERE client_id=?");
+      $params=array($name,$address,$phoneNo,$user,$client_id);
+      $stmt->execute($params);
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function userAlreadyAddedAsClient($user){
+    try{
+      $stmt=$this->conn->prepare("SELECT COUNT(*) as count FROM client WHERE user_name=?");
+      $params=array($user);
+      $stmt->execute($params);
+      $stmt->setFetchMode(PDO::FETCH_ASSOC);
+      return $stmt->fetch();
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function AllowClientUserNameUpdate($user,$client_id){
+    try{
+      $stmt=$this->conn->prepare("SELECT COUNT(*) as count FROM client WHERE user_name =? AND client_id !=?");
+      $params=array($user,$client_id);
+      $stmt->execute($params);
+      $stmt->setFetchMode(PDO::FETCH_ASSOC);
+      return $stmt->fetch();
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function getAllClients(){
+    try{
+      $stmt=$this->conn->prepare("SELECT * FROM client");
+      $stmt->execute();
+      return $stmt->fetchALL();
     }
     catch(PDOException $e){
       echo $e->getMessage();

@@ -3,35 +3,38 @@
 	require 'salesOrderCart.php';
 	$fO=new functions();
 	$fO->checkLogin();
-	if (isset($_POST['order'])){
-		if(isset($_POST['entry_date']) && count($_SESSION['salesOrder'])>0){
+	if (isset($_POST['update']) && isset($_POST['entry_date']) && count($_SESSION['salesOrder'])>0){
 			$entry_date=date('Y-m-d',strtotime($_POST['entry_date']));
 			if(isset($_SESSION['existing_order'])){
 				$i=0;
 				$fO->updateClientOrderById($entry_date,$_SESSION['existing_order']);
 				$fO->removeSalesOderDetailsByOrderId($_SESSION['existing_order']);
-				foreach($_POST['product'] as $value) {
+				foreach($_POST['product'] as $value){
 					if(isset($_POST['product'][$i]) && isset($_POST['quantity'][$i]) && isset($_POST['price'][$i]) && isset($_POST['amount'][$i])){
-						$fO->saveClientOrderDetails($_SESSION['existing_order'],$_POST['product'][$i],$_POST['quantity'][$i],$_POST['price'][$i]
-						,$_POST['amount'][$i],$_POST['discount'][$i]);
+						$fO->saveClientOrderDetails($_SESSION['existing_order'],$_POST['product'][$i],$_POST['quantity'][$i],$_POST['price'][$i],
+						$_POST['amount'][$i],$_POST['discount'][$i]);
 					}
 			 	$i++;
 		 		}
 				unset($_SESSION['existing_order']);
+				unset($_SESSION['salesOrder']);
+				unset($_SESSION['salesOrderUpdated']);
 			}
-			else{
-			$lastId=$fO->saveSalesOrder($entry_date,$_SESSION['log_user']);
-			$i=0;
-			foreach($_POST['product'] as $value) {
-			if(isset($_POST['product'][$i]) && isset($_POST['quantity'][$i]) && isset($_POST['price'][$i]) && isset($_POST['amount'][$i])){
-				$fO->saveClientOrderDetails($lastId,$_POST['product'][$i],$_POST['quantity'][$i],$_POST['price'][$i],$_POST['amount'][$i],$_POST['discount'][$i]);
-			}
-			$i++;
-			}
-			unset($_SESSION['salesOrder']);
-		}
 		header('Location:client_orders.php');
 	}
+	if (isset($_POST['order']) && isset($_POST['entry_date']) && count($_SESSION['salesOrder'])>0){
+		$entry_date=date('Y-m-d',strtotime($_POST['entry_date']));
+	$lastId=$fO->saveSalesOrder($entry_date,$_SESSION['log_user']);
+	$i=0;
+	foreach($_POST['product'] as $value) {
+	if(isset($_POST['product'][$i]) && isset($_POST['quantity'][$i]) && isset($_POST['price'][$i]) && isset($_POST['amount'][$i])){
+		$fO->saveClientOrderDetails($lastId,$_POST['product'][$i],$_POST['quantity'][$i],$_POST['price'][$i],$_POST['amount'][$i],$_POST['discount'][$i]);
+	}
+	$i++;
+	}
+	unset($_SESSION['salesOrder']);
+	unset($_SESSION['salesOrderUpdated']);
+	header('Location:client_orders.php');
 	}
   ?>
   <html>
@@ -135,15 +138,48 @@ document.getElementById("discount_sum").value=discount_sum;
     ?>
   	<div id="menu_main">
       <a href="client_orders.php">Client Orders List</a>
-	    <a href="client_order.php" id="item_selected">New Order</a>
+	    <a href="client_order.php" id="item_selected">Order</a>
       </div>
 			<?php
+			if (!isset($_SESSION['salesOrder'])){
+				 $_SESSION['salesOrder'] = new Cart();
+				 $_SESSION['salesOrderUpdated']=0;
+			}
+			if(isset($_GET['SelectedOrder'])){
+				$_SESSION['existing_order']=$_GET['SelectedOrder'];
+				if($_SESSION['salesOrderUpdated']==0){
+					$_SESSION['salesOrder'] = new Cart();
+					$salesOrder=$fO->getSalesOrderById($_GET['SelectedOrder']);
+					$orderProducts=$fO->getSalesOderDetailsByOrderId($salesOrder['sales_order_id']);
+					$_SESSION['salesOrder']->orderDate=$salesOrder['date_required'];
+					$_SESSION['salesOrder']->deliveryStarted=$salesOrder['delivery_started'];
+				foreach($orderProducts as $product){
+					$_SESSION['salesOrder']->add_to_cart($product['id'],$product['quantity'],$product['name'],$product['price'],0,$product['quantity_delivered'],0,0,0,-1);
+				}
+			}
+			}
+			if (isset($_GET['Delete']))
+			{
+				$_SESSION['salesOrder']->remove_from_cart($_GET['Delete']);
+			}
+			if (isset($_GET['update_cart']))
+			{
+				$_SESSION['salesOrder']->update_cart($_GET['update_cart'],$_GET['quantity']);
+				$_SESSION['salesOrderUpdated']=1;
+			}
+			if (isset($_GET['set_date']))
+			{
+				$_SESSION['salesOrder']->setDeliveryDate($_GET['set_date']);
+				$_SESSION['salesOrderUpdated']=1;
+			}
+			$hasPendingOrder=$fO->getClientOrderingValidity($_SESSION['log_user']);
+			if($hasPendingOrder['count']>0 && !isset($_SESSION['existing_order'])){
+					echo '<div class="alert alert-danger">
+						<strong>Please clear payment for pending invoice before creating a new one</strong>
+					</div>';
+			}
+			else{
 			echo '<form class="form-signin" method="POST"  action="'.$_SERVER['PHP_SELF'].'" id="sales_order_cart_form">';
-				if (!isset($_SESSION['salesOrder']) && !isset($_GET['SelectedOrder'])){
-					 $_SESSION['salesOrder'] = new Cart();
-				}
-				if(isset($_GET['edit_cart'])){
-				}
 				if(isset($_GET['add_cart'])){
 				$SearchString =$_GET['add_cart'];
 				$product=$fO->getInventoryItemByName($SearchString);
@@ -162,34 +198,10 @@ document.getElementById("discount_sum").value=discount_sum;
 						 }
 						if ($AlreadyOnThisCart!=1)
 						{
-							$_SESSION['salesOrder']->add_to_cart($product['id'],$quantity,$product['name'],$product['selling_price'],0,0,0,-1);
+							$_SESSION['salesOrder']->add_to_cart($product['id'],$quantity,$product['name'],$product['selling_price'],0,0,0,0,0,-1);
 						}
 				}//end of if(isset($_POST['add_cart]))
 				echo '</form>';
-				if (isset($_GET['Delete']))
-				{
-					$_SESSION['salesOrder']->remove_from_cart($_GET['Delete']);
-				}
-				if (isset($_GET['update_cart']))
-				{
-					$_SESSION['salesOrder']->update_cart($_GET['update_cart'],$_GET['quantity']);
-				}
-				if (isset($_GET['set_date']))
-				{
-					$_SESSION['salesOrder']->setDeliveryDate($_GET['set_date']);
-				}
-				if(isset($_GET['SelectedOrder'])){
-					$_SESSION['existing_order']=$_GET['SelectedOrder'];
-					if(!isset($_SESSION['salesOrder'])){
-						$_SESSION['salesOrder'] = new Cart();
-						$salesOrder=$fO->getSalesOrderById($_GET['SelectedOrder']);
-						$orderProducts=$fO->getSalesOderDetailsByOrderId($salesOrder['sales_order_id']);
-						$_SESSION['salesOrder']->orderDate=$salesOrder['date_required'];
-					foreach($orderProducts as $product){
-						$_SESSION['salesOrder']->add_to_cart($product['id'],$product['quantity'],$product['name'],$product['price'],0,0,0,-1);
-					}
-				}
-				}
 			 ?>
       <form class="form-signin" method="POST"  action="<?php echo $_SERVER['PHP_SELF']?>">
         <h2 class="form-signin-heading">Order Products</h2>
@@ -202,7 +214,17 @@ document.getElementById("discount_sum").value=discount_sum;
 				?>
 				<table id="sales_order_table" style="border-spacing:2px;border-collapse:separate;width:100%;">
 					<thead>
-            <tr><th>Product</th><th>Quantity</th><th>Delivered</th><th>Price</th><th>Discount</th><th>Amount</th><th></th></tr>
+            <tr>
+							<th>Product</th>
+							<th>Quantity</th>
+							<th>Delivered</th>
+							<th>Price</th>
+							<th>Discount</th>
+							<th>Amount</th>
+							<?php if($_SESSION['salesOrder']->deliveryStarted==0){
+							echo '<th></th>';
+						} ?>
+						</tr>
           </head>
         <tbody>
 					<?php
@@ -215,9 +237,15 @@ document.getElementById("discount_sum").value=discount_sum;
  				name="name[]" id="drug_0" style="margin-right:20px;margin-top:10px;" value="<?php echo $order->ItemDescription ?>"
  				required readonly/>
  				 </td>
+				 <?php if($_SESSION['salesOrder']->deliveryStarted==0){ ?>
 				 <td><input type="text"  class="form-control quantity" placeholder="Quantity Ordered"
- 					 name="quantity[]" id="quantity_<?php echo $order->LineNumber ?>" style="margin-right:20px;margin-top:10px;" value="<?php echo $order->Quantity ?>" required=""/>
- 				 </td>
+ 					 name="quantity[]" id="quantity_<?php echo $order->LineNumber ?>" style="margin-right:20px;margin-top:10px;"
+					 value="<?php echo $order->Quantity ?>" required=""/></td>
+			   <?php } else{ ?>
+					<td><input type="text"  class="form-control quantity" placeholder="Quantity Ordered"
+						name="quantity[]" id="quantity_<?php echo $order->LineNumber ?>" style="margin-right:20px;margin-top:10px;"
+						value="<?php echo $order->Quantity ?>" required="" readonly=""/></td>
+		     <?php }?>
 				 <td><input type="text"  class="form-control" placeholder="Quantity Already Delivered"
  					 name="quantity_delivered[]" id="quantity_delivered_<?php echo $order->LineNumber ?>" style="margin-right:20px;margin-top:10px;"
 					 value="<?php echo $order->quantityDelivered ?>" required="" readonly=""/>
@@ -230,10 +258,13 @@ document.getElementById("discount_sum").value=discount_sum;
 					 required="" readonly=""/>
  				 </td>
 				 <td><input type="text"  class="form-control amount" placeholder="Amount"
- 					 name="amount[]" id="amount_<?php echo $order->LineNumber ?>" style="margin-right:20px;margin-top:10px;" required=""/>
+ 					 name="amount[]" id="amount_<?php echo $order->LineNumber ?>" style="margin-right:20px;margin-top:10px;" required="" readonly=""/>
  				 </td>
 				 <?php
-				echo "<td><a href='".$_SERVER['PHP_SELF']."?"."Delete=".$order->LineNumber ."'><span class='glyphicon glyphicon-trash'></span></a></td>";
+				 if($_SESSION['salesOrder']->deliveryStarted==0){
+				echo "<td><a href='".$_SERVER['PHP_SELF']."?"."Delete=".$order->LineNumber ."'>
+				<span class='glyphicon glyphicon-trash'></span></a></td>";
+				}
 				echo '</tr>';
 			 }?>
         </tbody>
@@ -249,21 +280,26 @@ document.getElementById("discount_sum").value=discount_sum;
 				<input type="number" class="form-control" name="total" id="total" value="0" readonly=""/>
 				</div>
 				<div style="clear:both;"></div>';
+				if($_SESSION['salesOrder']->deliveryStarted==0){
 				echo '<br><input type="text" class="form-control" name="product_search" id="product_search"
 				placeholder="Type three characters to display product" />
 				<div id="result"></div>';
+			  }
 				?>
 				<br><br>
 				<?php
-				if(isset($_SESSION['existing_order'])){
-				echo	'<button type="submit" name="order" id="order" class="btn btn-lg btn-primary"
+				if(isset($_SESSION['existing_order']) && $_SESSION['salesOrder']->deliveryStarted==0){
+				echo	'<button type="submit" name="update" id="update" class="btn btn-lg btn-primary"
 					style="display: block; margin: 0 auto;width:200px;"><span class="fa fa-times"></span>Update Order</button>';
 				}
-				elseif (count($_SESSION['salesOrder']->LineItems)>0 && !isset($_SESSION['existing_order']))
+				elseif (count($_SESSION['salesOrder']->LineItems)>0 && !isset($_SESSION['existing_order'])
+				&& $_SESSION['salesOrder']->deliveryStarted==0)
 				{
         echo '<button type="submit" name="order" id="order" class="btn btn-lg btn-primary"
 				style="display: block; margin: 0 auto;width:200px;"><span class="fa fa-times"></span>Order Products</button>';
-				 } ?>
-      </form>
+				 }
+      echo '</form>';
+		}
+			?>
   </body>
   </html>

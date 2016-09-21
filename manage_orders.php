@@ -32,18 +32,21 @@
     <th>#</th>
     <th>Date Required</th>
     <th>Client</th>
+		<th>Client</th>
   </form>
   </tr>
   <?php
   if(isset($_REQUEST['srch-term'])){
     $salesOrders=$fO->getClientSalesOrders($_REQUEST['srch-term']);
     foreach($salesOrders as $order){
-    printf("<tr><td><a href=\"sales_order.php?SelectedOrder=%s\">" .$order['sales_order_id'] . "</a></td>
+    printf("<tr><td><a href=\"sales_order.php?SelectedOrder=%s\">Dispatch</a></td>
     <td>%s</td>
+		<td><a href=\"sales_order.php?updateOrder=%s\">Update</a></td>
 		<td>%s</td>
     </tr>",
     $order['sales_order_id'],
-    $order['entry_date'],
+    $order['date_required'],
+		$order['sales_order_id'],
     $order['client']
     );
     }
@@ -51,13 +54,15 @@
   else{
     $salesOrders=$fO->getAllSalesOrders();
 		foreach($salesOrders as $order){
-    printf("<tr><td><a href=\"sales_order.php?SelectedOrder=%s\">" .$order['sales_order_id'] . "</a></td>
-    <td>%s</td>
-		<td>%s</td>
-    </tr>",
-    $order['sales_order_id'],
-    $order['date_required'],
-    $order['client']
+      printf("<tr><td><a href=\"sales_order.php?SelectedOrder=%s\">Dispatch</a></td>
+			<td>%s</td>
+			<td><a href=\"sales_order.php?updateOrder=%s\">Update</a></td>
+			<td>%s</td>
+	    </tr>",
+	    $order['sales_order_id'],
+	    $order['date_required'],
+			$order['sales_order_id'],
+	    $order['client']
     );
     }
   }

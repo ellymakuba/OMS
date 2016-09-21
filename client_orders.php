@@ -10,7 +10,7 @@
   <?PHP $fO->includeMenu(1); ?>
 	<div id="menu_main">
     <a href="client_orders.php" id="item_selected">Client Orders List</a>
-    <a href="client_order.php">New Order</a>
+    <a href="client_order.php">Order</a>
     </div>
   <div class="table-responsive">
     <div class="col-sm-3 col-md-3 pull-left">
@@ -38,7 +38,7 @@
   if(isset($_REQUEST['srch-term'])){
     $salesOrders=$fO->getAllClientOrders($_SESSION['log_user']);
     foreach($salesOrders as $order){
-    printf("<tr><td><a href=\"client_order.php?SelectedOrder=%s\">" .$order['sales_order_id'] . "</a></td>
+    printf("<tr><td><a href=\"client_order.php?SelectedOrder=%s\">View</a></td>
     <td>%s</td>
 		<td>%s</td>
     </tr>",
@@ -51,7 +51,7 @@
   else{
     $salesOrders=$fO->getAllClientOrders($_SESSION['log_user']);
 		foreach($salesOrders as $order){
-    printf("<tr><td><a href=\"client_order.php?SelectedOrder=%s\">" .$order['sales_order_id'] . "</a></td>
+    printf("<tr><td><a href=\"client_order.php?SelectedOrder=%s\">View</a></td>
     <td>%s</td>
 		<td>%s</td>
     </tr>",
