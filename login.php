@@ -21,10 +21,11 @@
 			$_SESSION['log_report'] = $user['ugroup_report'];
 			$_SESSION['log_fingerprint'] = $fingerprint;
 			// Forward to start.php
-			$functionObject->getUserByUserName($_SESSION['log_user']);
-	    $functionObject->getUserRole($_SESSION['user']['user_id']);
+			$user=$functionObject->getUserByUserName($_SESSION['log_user']);
+	    $functionObject->getUserRole($user['user_id']);
+			$_SESSION['AllowedPageSecurityTokens']=$functionObject->getPrivilegesByRole($_SESSION['secroleId']);
 			if($_SESSION['secroleId']==7){
-			header('Location:client_orders.php');
+			header('Location:products.php');
 			}
 			else{
 			header('Location:manage_orders.php');
@@ -38,7 +39,6 @@
 	<meta charset="utf-8">
 </head>
 	<?PHP $functionObject->includeHead('Hospital Management') ?>
-
 	<body>
 		<div class="content_center" style="width:50%; padding-left:5em; text-align:left;margin-top:10%;">
 			<p class="heading" style="margin:10px; text-align:center;">User Login</p>

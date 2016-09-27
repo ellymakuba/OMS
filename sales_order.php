@@ -189,8 +189,9 @@ $('.payment').change(function(){
     <?PHP $fO->includeMenu(1);
     ?>
   	<div id="menu_main">
-			<a href="manage_orders.php">Sales Order List</a>
+			<a href="manage_orders.php">Uncleared Sales Orders</a>
 	    <a href="sales_order.php" id="item_selected">Sales Order</a>
+			<a href="client_orders_list.php">Client List</a>
       </div>
 			<?php
 			echo '<form class="form-signin" method="POST"  action="'.$_SERVER['PHP_SELF'].'" id="sales_order_cart_form">';

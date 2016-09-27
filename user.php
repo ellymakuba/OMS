@@ -25,7 +25,7 @@
 	<?PHP $fO->includeHead('Settings | User', 0) ?>
 	</head>
 	<body class="container">
-		<?PHP $fO->includeMenu(9); ?>
+		<?PHP $fO->includeMenu(4); ?>
 		<div id="menu_main">
 			<a href="manage_settings.php">Users List</a>
 			<a href="user.php" id="item_selected">User</a>

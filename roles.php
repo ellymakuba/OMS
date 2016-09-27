@@ -13,7 +13,7 @@ if (isset($_GET['SelectedRole'])){
 <?PHP $fO->includeHead('User Roles',0) ?>
 </head>
 <body class="container">
-<?PHP $fO->includeMenu(9); ?>
+<?PHP $fO->includeMenu(4); ?>
 <div id="menu_main">
 	<a href="cust_search.php">Users</a>
 	<a href="roles.php" id="item_selected">Roles</a>

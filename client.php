@@ -9,7 +9,7 @@
 	<?PHP $fO->includeHead('Settings | Clients', 0) ?>
 	</head>
 	<body class="container">
-		<?PHP $fO->includeMenu(9); ?>
+		<?PHP $fO->includeMenu(4); ?>
 		<div id="menu_main">
 			<a href="manage_settings.php">Users List</a>
 			<a href="user.php">User</a>
@@ -25,6 +25,7 @@
 				if($userAlreadyAddedAsClient['count']==0){
 					$fO->saveNewClient($_POST['client_name'],$_POST['address'],$_POST['phone'],$_POST['user']);
 					unset($_SESSION['client']);
+					header("Location:client_list.php");
 				}
 				else{
 					echo '<div class="alert alert-danger">
@@ -39,6 +40,7 @@
 				if($userAlreadyAddedAsClient['count']==0){
 				$fO->updateClient($_SESSION['client']['client_id'],$_POST['client_name'],$_POST['address'],$_POST['phone'],$_POST['user']);
 				unset($_SESSION['client']);
+				header("Location:client_list.php");
 			}
 			else{
 				echo '<div class="alert alert-danger">
@@ -58,13 +60,15 @@
 				</div>
 				<div style="clear:both;"></div>
 				<div class="form-inline">
-					<label for="address">:</label>
-					<input type="text" name="address" placeholder="Address" style="width:90%;float:right;" class="form-control" required=""/>
+					<label for="address">Address:</label>
+					<input type="text" name="address" placeholder="Address" style="width:90%;float:right;" value="<?PHP  echo $_SESSION['client']['address'];?>"
+					class="form-control" required=""/>
 				</div>
 				<div style="clear:both;"></div>
 				<div class="form-inline">
-					<label for="user_pw_conf">Phone Number:</label>
-					<input type="number" name="phone" placeholder="Phone Number" style="width:90%;float:right;" class="form-control" required=""/>
+					<label for="phone">Phone Number:</label>
+					<input type="number" name="phone" placeholder="Phone Number" style="width:90%;float:right;" value="<?PHP  echo $_SESSION['client']['phone_no'];?>"
+					class="form-control" required=""/>
 				</div>
 				<div style="clear:both;"></div>
 				<div class="form-inline">

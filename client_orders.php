@@ -51,7 +51,7 @@
   else{
     $salesOrders=$fO->getAllClientOrders($_SESSION['log_user']);
 		foreach($salesOrders as $order){
-    printf("<tr><td><a href=\"client_order.php?SelectedOrder=%s\">View</a></td>
+    printf("<tr><td><a href=\"client_order.php?SelectedOrder=%s\">" .$order['sales_order_id'] . "</a></td>
     <td>%s</td>
 		<td>%s</td>
     </tr>",

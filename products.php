@@ -1,0 +1,117 @@
+<?PHP
+	require 'functions.php';
+	require 'productCart.php';
+	require 'salesOrderCart.php';
+	$fO=new functions();
+	$fO->checkLogin();
+	if (isset($_POST['update'])){
+	}
+  ?>
+  <html>
+  <?PHP $fO->includeHead('Product Cart',0) ?>
+	<script>
+	$(document).ready(function(){
+$(document).on("click", "#save", function(e) {
+		bootbox.confirmation("Are you sure?", function() {
+		});
+});
+});
+	</script>
+  </head>
+  <body class="container">
+    <?PHP $fO->includeMenu(1);
+		$categories=$fO->getAllProductCategory();
+		if(!isset($_SESSION['productList'])){
+			$_SESSION['productList'] = new ProductCart();
+			$products=$fO->getAllProducts();
+			foreach($products as $product){
+				$_SESSION['productList']->add_to_cart($product['id'],$product['name'],$product['selling_price'],$product['name'].'.jpg',-1);
+			}
+		}
+		if(isset($_GET['category'])){
+			$_SESSION['productList'] = new ProductCart();
+			$selectedCategory=$fO->getProductCategoryById($_GET['category']);
+			$_SESSION['productList']->setCategory($selectedCategory['name']);
+			$categoryProducts=$fO->getProductsByCategoryId($_GET['category']);
+			foreach($categoryProducts as $product){
+				$_SESSION['productList']->add_to_cart($product['id'],$product['name'],$product['selling_price'],$product['name'].'.jpg',-1);
+			}
+		}
+		if (!isset($_SESSION['salesOrder'])){
+			 $_SESSION['salesOrder'] = new Cart();
+		}
+		if(isset($_GET['add_cart'])){
+		$id =$_GET['add_cart'];
+		$product=$fO->getInventoryItemById($id);
+		$AlreadyOnThisCart =0;
+		$quantity=1;
+		if (count($_SESSION['salesOrder']->LineItems)>0){
+				 foreach ($_SESSION['salesOrder']->LineItems AS $OrderItem)
+						{
+						$LineNumber = $_SESSION['salesOrder']->LineCounter;
+						if ($OrderItem->productID ==$product['id'])
+						 {
+							 $AlreadyOnThisCart = 1;
+							}
+					 }
+				 }
+				if ($AlreadyOnThisCart!=1)
+				{
+					$_SESSION['salesOrder']->add_to_cart($product['id'],$quantity,$product['name'],$product['selling_price'],0,0,0,0,0,-1);
+				}
+		}//end of if(isset($_POST['add_cart]))
+    ?>
+  	<div id="menu_main">
+			<a href="products.php" id="item_selected">Products</a>
+      <a href="client_statement.php">Statement</a>
+      </div>
+			<?php if (count($_SESSION['salesOrder']->LineItems)>0)
+			{ ?>
+			<div class="col-sm-3 col-md-3 pull-right" style="margin-bottom:10px;">
+				<a href="client_order.php" class="btn btn-default btn-primary">View Order Cart</a>
+			</div>
+			<?php } ?>
+			<div class="row">
+            <div class="col-md-3">
+                <p class="lead"><?php echo $_SESSION['productList']->category ?></p>
+                <div class="list-group">
+									<?php foreach($categories as $category){
+                    echo '<a href="products.php?category='.$category['id'].'" class="list-group-item">'.$category['name'].'</a>';
+									}
+								?>
+                </div>
+            </div>
+			<div class="col-md-9">
+				<div class="row">
+			<?php
+			if (count($_SESSION['productList']->LineItems)>0)
+			{
+				foreach ($_SESSION['productList']->LineItems as $order)
+				{
+				?>
+        <div class="col-sm-4 col-lg-4 col-md-4">
+          <div class="thumbnail">
+						<img src="images/<?php echo $order->photo ?>" alt="">
+            <div class="caption">
+							<h4 class="pull-right">KSH.<?php echo $order->Price ?></h4>
+            <h4><a href="#"><?php echo $order->ItemDescription ?></a></h4>
+            <p>This is a short description. Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+						<a href="products.php?add_cart=<?php echo $order->productID ?>"><h4 class="pull-right">Add to cart</h4></a>
+            </div>
+            <div class="ratings">
+            <p>
+              <span class="glyphicon glyphicon-star"></span>
+              <span class="glyphicon glyphicon-star"></span>
+              <span class="glyphicon glyphicon-star"></span>
+              <span class="glyphicon glyphicon-star"></span>
+              <span class="glyphicon glyphicon-star"></span>
+            </p>
+            </div>
+          </div>
+        </div>
+			<?php } } ?>
+			</div>
+      </div>
+		</div>
+  </body>
+  </html>

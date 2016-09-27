@@ -20,7 +20,7 @@
 				unset($_SESSION['salesOrder']);
 				unset($_SESSION['salesOrderUpdated']);
 			}
-		header('Location:client_orders.php');
+		header('Location:client_statement.php');
 	}
 	if (isset($_POST['order']) && isset($_POST['entry_date']) && count($_SESSION['salesOrder'])>0){
 		$entry_date=date('Y-m-d',strtotime($_POST['entry_date']));
@@ -34,7 +34,7 @@
 	}
 	unset($_SESSION['salesOrder']);
 	unset($_SESSION['salesOrderUpdated']);
-	header('Location:client_orders.php');
+	header('Location:client_statement.php');
 	}
   ?>
   <html>
@@ -137,13 +137,16 @@ document.getElementById("discount_sum").value=discount_sum;
     <?PHP $fO->includeMenu(1);
     ?>
   	<div id="menu_main">
-      <a href="client_orders.php">Client Orders List</a>
-	    <a href="client_order.php" id="item_selected">Order</a>
+			<a href="products.php">Products</a>
+      <a href="client_statement.php">Statement</a>
+			<a href="client_order" id="item_selected">Order</a>
       </div>
 			<?php
 			if (!isset($_SESSION['salesOrder'])){
 				 $_SESSION['salesOrder'] = new Cart();
-				 $_SESSION['salesOrderUpdated']=0;
+			}
+			if (!isset($_SESSION['salesOrderUpdated'])){
+				$_SESSION['salesOrderUpdated']=0;
 			}
 			if(isset($_GET['SelectedOrder'])){
 				$_SESSION['existing_order']=$_GET['SelectedOrder'];
@@ -153,7 +156,7 @@ document.getElementById("discount_sum").value=discount_sum;
 					$orderProducts=$fO->getSalesOderDetailsByOrderId($salesOrder['sales_order_id']);
 					$_SESSION['salesOrder']->orderDate=$salesOrder['date_required'];
 					$_SESSION['salesOrder']->deliveryStarted=$salesOrder['delivery_started'];
-				foreach($orderProducts as $product){
+					foreach($orderProducts as $product){
 					$_SESSION['salesOrder']->add_to_cart($product['id'],$product['quantity'],$product['name'],$product['price'],0,$product['quantity_delivered'],0,0,0,-1);
 				}
 			}
@@ -177,6 +180,9 @@ document.getElementById("discount_sum").value=discount_sum;
 					echo '<div class="alert alert-danger">
 						<strong>Please clear payment for pending invoice before creating a new one</strong>
 					</div>';
+			}
+			if(isset($_REQUEST['clear_order'])){
+				unset($_SESSION['salesOrder']);
 			}
 			else{
 			echo '<form class="form-signin" method="POST"  action="'.$_SERVER['PHP_SELF'].'" id="sales_order_cart_form">';
@@ -203,6 +209,14 @@ document.getElementById("discount_sum").value=discount_sum;
 				}//end of if(isset($_POST['add_cart]))
 				echo '</form>';
 			 ?>
+			 <div class="col-sm-3 col-md-2 pull-right" style="margin-bottom:10px;">
+ 				<a href="products.php" class="btn btn-default btn-primary">View Products</a>
+ 			</div>
+			<div class="pull-right" style="margin-bottom:10px;">
+				<form class="navbar-form">
+			 <button name="clear_order" type="submit" class="glyphicon glyphicon-refresh"></button>
+		 </form>
+		 </div>
       <form class="form-signin" method="POST"  action="<?php echo $_SERVER['PHP_SELF']?>">
         <h2 class="form-signin-heading">Order Products</h2>
         <label for="entry_date">Date You Want Delivery</label>
@@ -280,11 +294,6 @@ document.getElementById("discount_sum").value=discount_sum;
 				<input type="number" class="form-control" name="total" id="total" value="0" readonly=""/>
 				</div>
 				<div style="clear:both;"></div>';
-				if($_SESSION['salesOrder']->deliveryStarted==0){
-				echo '<br><input type="text" class="form-control" name="product_search" id="product_search"
-				placeholder="Type three characters to display product" />
-				<div id="result"></div>';
-			  }
 				?>
 				<br><br>
 				<?php

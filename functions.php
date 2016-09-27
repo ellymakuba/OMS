@@ -13,10 +13,10 @@ class functions{
 }
 public function getUserByUsernameAndPassword($username, $password){
  		$password=sha1($password);
-        $stmt = $this->conn->prepare("SELECT * FROM user,securityroles WHERE user.secroleid = securityroles.secroleid AND user_name = ? AND user_pw LIKE ?");
+    $stmt = $this->conn->prepare("SELECT * FROM user,securityroles WHERE user.secroleid = securityroles.secroleid AND user_name = ? AND user_pw LIKE ?");
 		$data=array($username, $password);
 		$stmt->execute($data);
-        $stmt->setFetchMode(PDO::FETCH_ASSOC);
+    $stmt->setFetchMode(PDO::FETCH_ASSOC);
 		return $stmt->fetch();
     }
     function getUserByUserName($userName){
@@ -106,11 +106,6 @@ public function fingerprint(){
 		if (isset($_GET['cust'])) $_SESSION['cust_id'] = $_GET['cust'];
 		else header('Location: start.php');
 	}
-	function getLoanID(){
-		if (isset($_GET['lid'])) $_SESSION['loan_id'] = sanitize($_GET['lid']);
-		else header('Location: customer.php?cust='.$_SESSION['cust_id']);
-	}
-
 	function includeHead($title, $endFlag = 1) {
 		echo '<head>
 			<meta http-equiv="Content-Script-Type" content="text/javascript">
@@ -212,13 +207,10 @@ public function fingerprint(){
 				if ($tab_no == 2) echo ' id="tab_selected"';
 				echo '><a href="manage_inventory.php">Inventory</a></li>
 				<li';
-				if ($tab_no == 7) echo ' id="tab_selected"';
-				echo '><a href="manage_settings.php">Reports</a></li>
+				if ($tab_no == 3) echo ' id="tab_selected"';
+				echo '><a href="view_reports.php">Reports</a></li>
         <li';
-				if ($tab_no == 8) echo ' id="tab_selected"';
-				echo '><a href="manage_inventory.php">Billing</a></li>
-        <li';
-        if ($tab_no == 9) echo ' id="tab_selected"';
+        if ($tab_no == 4) echo ' id="tab_selected"';
         echo '><a href="manage_settings.php">Settings</a></li>';
       }
 			echo '</ul>
@@ -242,7 +234,9 @@ public function fingerprint(){
 
   function getAllProducts(){
     try{
-      $stmt=$this->conn->prepare("SELECT * FROM product");
+      $stmt=$this->conn->prepare("SELECT p.*,
+      (SELECT inv.quantity FROM inventory inv WHERE inv.product_id=p.id) as quantity
+      FROM product p ");
       $stmt->execute();
       $resultSet=$stmt->fetchALL();
   		return $resultSet;
@@ -250,6 +244,18 @@ public function fingerprint(){
     catch(PDOException $e){
 			echo $e->getMessage();
 		}
+  }
+  function getProductsByCategoryId($id){
+    try{
+      $stmt=$this->conn->prepare("SELECT * FROM product WHERE category=?");
+      $params=array($id);
+      $stmt->execute($params);
+      $resultSet=$stmt->fetchALL();
+      return $resultSet;
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
   }
   function getProductsByName($name){
     try{
@@ -288,11 +294,11 @@ public function fingerprint(){
 			echo $e->getMessage();
 		}
   }
-  function updateProduct($drugId,$name,$bPrice,$sPrice,$description,$company,$category){
+  function updateProduct($productId,$name,$bPrice,$sPrice,$description,$company,$category){
 		try{
-			$stmt=$this->conn->prepare("UPDATE product SET name=?,buying_price=?,selling_price=?
+			$stmt=$this->conn->prepare("UPDATE product SET name=?,buying_price=?,selling_price=?,
       description=?,company=?,category=? WHERE id=?");
-			$params=array($name,$bPrice,$sPrice,$description,$company,$category,$drugId);
+			$params=array($name,$bPrice,$sPrice,$description,$company,$category,$productId);
 			$stmt->execute($params);
 		}
 		catch(PDOException $e){
@@ -301,8 +307,21 @@ public function fingerprint(){
 	}
   function getAllSalesOrders(){
     try{
-      $stmt=$this->conn->prepare("SELECT * FROM sales_order");
-      $stmt->execute();
+      $stmt=$this->conn->prepare("SELECT * FROM sales_order where complete_delivery=? AND cleared=?");
+      $params=array(0,0);
+      $stmt->execute($params);
+      $resultSet=$stmt->fetchALL();
+  		return $resultSet;
+    }
+    catch(PDOException $e){
+			echo $e->getMessage();
+		}
+  }
+  function getClientOrders($user){
+    try{
+      $stmt=$this->conn->prepare("SELECT * FROM sales_order WHERE client=?");
+      $params=array($user);
+      $stmt->execute($params);
       $resultSet=$stmt->fetchALL();
   		return $resultSet;
     }
@@ -447,11 +466,11 @@ public function fingerprint(){
 			echo $e->getMessage();
 		}
   }
-  function addNewProduct($name,$bPrice,$sPrice,$description,$company,$category){
+  function addNewProduct($name,$bPrice,$sPrice,$description,$company,$category,$pic){
     try{
-      $stmt=$this->conn->prepare("INSERT INTO product (name,buying_price,selling_price,description,company,category)
-      VALUES(?,?,?,?,?,?)");
-      $params=array($name,$bPrice,$sPrice,$description,$company,$category);
+      $stmt=$this->conn->prepare("INSERT INTO product (name,buying_price,selling_price,description,company,category,pic)
+      VALUES(?,?,?,?,?,?,?)");
+      $params=array($name,$bPrice,$sPrice,$description,$company,$category,$pic);
       $stmt->execute($params);
       }
     catch(PDOException $e){
@@ -463,6 +482,18 @@ public function fingerprint(){
       $stmt=$this->conn->prepare("SELECT * FROM product_category");
       $stmt->execute();
       return $stmt->fetchALL();
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function getProductCategoryById($id){
+    try{
+      $stmt=$this->conn->prepare("SELECT * FROM product_category WHERE id=? LIMIT 1");
+      $params=array($id);
+      $stmt->execute($params);
+      $stmt->setFetchMode(PDO::FETCH_ASSOC);
+      return $stmt->fetch();
     }
     catch(PDOException $e){
       echo $e->getMessage();
@@ -494,6 +525,21 @@ public function fingerprint(){
       $stmt->execute($params);
       $resultSet=$stmt->fetchALL();
       return $resultSet;
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function getInventoryItemById($id){
+    try{
+      $stmt=$this->conn->prepare("SELECT product.*,SUM(inv.quantity) as stock FROM product
+      INNER JOIN inventory inv ON product.id=inv.product_id
+      WHERE product.id=?
+      GROUP BY inv.product_id LIMIT 1");
+      $params=array($id);
+      $stmt->execute($params);
+      $stmt->setFetchMode(PDO::FETCH_ASSOC);
+      return $stmt->fetch();
     }
     catch(PDOException $e){
       echo $e->getMessage();
@@ -690,7 +736,8 @@ public function fingerprint(){
   }
   function getAllUsers(){
     try{
-      $stmt=$this->conn->prepare("SELECT * FROM user");
+      $stmt=$this->conn->prepare("SELECT user.*,sec.secrolename as role FROM user
+      INNER JOIN securityroles sec ON user.secroleid=sec.secroleid");
       $stmt->execute();
       return $stmt->fetchALL();
     }
@@ -889,7 +936,7 @@ public function fingerprint(){
   }
   function updateClient($client_id,$name,$address,$phoneNo,$user){
     try{
-      $stmt=$this->conn->prepare("UPDATE cleint SET name=?,address=?,phone_no=?,user_name=? WHERE client_id=?");
+      $stmt=$this->conn->prepare("UPDATE client SET name=?,address=?,phone_no=?,user_name=? WHERE client_id=?");
       $params=array($name,$address,$phoneNo,$user,$client_id);
       $stmt->execute($params);
     }
@@ -923,7 +970,15 @@ public function fingerprint(){
   }
   function getAllClients(){
     try{
-      $stmt=$this->conn->prepare("SELECT * FROM client");
+      $stmt=$this->conn->prepare("SELECT cl.*,
+        (SELECT SUM(sod.amount) as required_payment FROM sales_order so
+        INNER JOIN sales_order_details sod ON so.sales_order_id=sod.sales_order_id
+        WHERE so.client=cl.user_name) as required,
+        (SELECT SUM(sod.payment) as total_paid FROM sales_order so
+        INNER JOIN sales_order_details sod ON so.sales_order_id=sod.sales_order_id
+        WHERE so.client=cl.user_name) as paid,
+        (SELECT required-paid ) as balance
+        FROM client cl ORDER BY balance DESC");
       $stmt->execute();
       return $stmt->fetchALL();
     }
@@ -931,5 +986,63 @@ public function fingerprint(){
       echo $e->getMessage();
     }
   }
+  function getClientById($client_id){
+    try{
+      $stmt=$this->conn->prepare("SELECT * FROM client WHERE client_id=?");
+      $params=array($client_id);
+      $stmt->execute($params);
+      $stmt->setFetchMode(PDO::FETCH_ASSOC);
+      return $stmt->fetch();
+    }
+    catch(PDOException $e){
+      echo $e->getMessage();
+    }
+  }
+  function getClientStatementByUserName($name){
+    try{
+      $stmt=$this->conn->prepare("SELECT so.*,
+      (SELECT SUM(sod.amount) as total_bill FROM sales_order_details sod WHERE sod.sales_order_id=so.sales_order_id) as order_amount,
+      (SELECT SUM(sod.payment) as total_paid FROM sales_order_details sod WHERE sod.sales_order_id=so.sales_order_id) as payment,
+      (SELECT order_amount-payment) as balance
+      FROM sales_order so
+      WHERE so.client LIKE ? ORDER BY so.sales_order_id DESC");
+      $params=array($name);
+      $stmt->execute($params);
+      $resultSet=$stmt->fetchALL();
+  		return $resultSet;
+    }
+    catch(PDOException $e){
+			echo $e->getMessage();
+		}
+  }
+  function getSalesReport($startDate,$endDate){
+    try{
+      $startDate=date('Y-m-d',strtotime($startDate));
+      $endDate=date('Y-m-d',strtotime($endDate));
+      $stmt=$this->conn->prepare("SELECT p.name,SUM(sod.amount) as sales,SUM(sod.discount) as discount,SUM(sod.payment) as payment
+      FROM sales_order_details sod INNER JOIN sales_order so ON sod.sales_order_id=so.sales_order_id
+      INNER JOIN product p ON sod.product_id=p.id
+      WHERE so.date_required BETWEEN ? AND ?
+      GROUP BY sod.product_id");
+      $params=array($startDate,$endDate);
+      $stmt->execute($params);
+      return $stmt->fetchALL();
+    }
+    catch(PDOException $e){
+			echo $e->getMessage();
+		}
+  }
+  function resizeImage($width, $height, $path){
+		list($w, $h) = getimagesize($_FILES['image']['tmp_name']);
+		$basename = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_FILENAME));
+		$path = $path.$width.'x'.$height.'.jpg';
+		$imgString = file_get_contents($_FILES['image']['tmp_name']);
+		$image = imagecreatefromstring($imgString);
+		$tmp_img = imagecreatetruecolor($width, $height);
+		imagejpeg($tmp_img, $path, 95);
+		return $path;
+		imagedestroy($image);
+		imagedestroy($tmp_img);
+	}
 }
 ?>

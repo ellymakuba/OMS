@@ -33,11 +33,12 @@
   <table class="table table-striped">
   <tr>
   <form method="POST">
-            <th>#</th>
+            <th>Edit</th>
             <th>Name</th>
             <th>Description</th>
             <th>Cost</th>
             <th>Company</th>
+						<th>Stock</th>
   </form>
   </tr>
   <?php
@@ -50,12 +51,14 @@
     <td>%s</td>
     <td>%s</td>
     <td>%s</td>
+		<td>%s</td>
     </tr>",
   $product['id'],
   $product['name'],
   $product['description'],
   $product['buying_price'],
-  $product['selling_price']
+  $product['selling_price'],
+	$product['quantity']
     );
     }
   }
@@ -67,12 +70,14 @@
     <td>%s</td>
     <td>%s</td>
     <td>%s</td>
+		<td>%s</td>
     </tr>",
 		$product['id'],
 	  $product['name'],
 	  $product['description'],
 	  $product['buying_price'],
-	  $product['selling_price']
+	  $product['selling_price'],
+		$product['quantity']
     );
     }
   }

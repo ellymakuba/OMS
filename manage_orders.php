@@ -9,8 +9,9 @@
   <body class="container">
   <?PHP $fO->includeMenu(1); ?>
 	<div id="menu_main">
-    <a href="manage_orders.php" id="item_selected">sales Order List</a>
+    <a href="manage_orders.php" id="item_selected">Uncleared sales Orders</a>
     <a href="sales_order.php">Sales Order</a>
+		<a href="client_orders_list.php">Client Orders List</a>
     </div>
   <div class="table-responsive">
     <div class="col-sm-3 col-md-3 pull-left">

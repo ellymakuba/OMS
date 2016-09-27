@@ -3,21 +3,18 @@
 	require 'functions.php';
 	$fO=new functions();
 	$fO->checkLogin();
-	$users=$fO->getAllUsers();
+	$clients=$fO->getAllClients();
 ?>
 <html>
-	<?PHP $fO->includeHead('Settings | Users',1); ?>
+	<?PHP $fO->includeHead('Orders | Clients',1); ?>
 	<body class="container">
 		<?PHP
-				$fO->includeMenu(4);
+				$fO->includeMenu(1);
 		?>
 		<div id="menu_main">
-			<a href="manage_settings.php" id="item_selected">Users List</a>
-			<a href="user.php" >User</a>
-      <a href="roles.php">Roles</a>
-      <a href="privileges.php">Privileges</a>
-			<a href="client_list.php">Client List</a>
-			<a href="client.php">Client</a>
+			<a href="manage_orders.php">Uncleared Sales Order</a>
+	    <a href="sales_order.php">Sales Order</a>
+			<a href="client_orders_list.php" id="item_selected">Client Orders List</a>
 		</div>
 		<div class="container">
 			<div class="col-sm-3 col-md-3 pull-left">
@@ -33,15 +30,21 @@
 			<form action="set_ugroup.php" method="post">
 				<table class="table table-striped">
 					<tr>
+						<th>#</th>
+						<th>Name</th>
+						<th>Address</th>
+						<th>Phone No</th>
 						<th>User Name</th>
-						<th>Security Role</th>
-						<th>Changed</th>
+						<th>Balance</th>
 					</tr>
 					<?PHP
-					foreach ($users as $user){
-						echo '<td><a href="user.php?selectedUser='.$user['user_name'].'">'.$user['user_name'].'</a></td>
-									<td>'.$user['role'].'</td>
-									<td>'.$user['date_created'].'</td>
+					foreach ($clients as $client){
+						echo '<td><a href="view_statement.php?selectedClient='.$client['user_name'].'">View</a></td>
+									<td>'.$client['name'].'</td>
+									<td>'.$client['address'].'</td>
+									<td>'.$client['phone_no'].'</td>
+									<td>'.$client['user_name'].'</td>
+									<td>'.$client['balance'].'</td>
 								</tr>';
 					}
 					?>
