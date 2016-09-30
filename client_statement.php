@@ -2,6 +2,7 @@
 	require 'functions.php';
 	$fO=new functions();
 	$fO->checkLogin();
+	$pageSecurity=6;
 	?>
   <html>
   <?PHP $fO->includeHead('Sales Order List',0) ?>
@@ -12,6 +13,7 @@
 		<a href="products.php">Products</a>
 		<a href="client_statement.php" id="selected_item">Statement</a>
     </div>
+		<?php if(in_array($pageSecurity, $_SESSION['AllowedPageSecurityTokens'])){?>
   <div class="table-responsive">
   <table class="table table-striped">
   <?php
@@ -45,5 +47,10 @@
   ?>
   </table>
     </div>
+	<?php }	else{
+			echo '<div class="alert alert-danger">
+				<strong>You do not have permission to access this page, please confirm with the system administrator</strong>
+			</div>';
+		}?>
   </body>
   </html>

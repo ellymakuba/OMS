@@ -4,6 +4,7 @@
 	$fO=new functions();
 	$fO->checkLogin();
 	$users=$fO->getUsersWithClientSecurityRole();
+	$pageSecurity=1;
 ?>
 <html>
 	<?PHP $fO->includeHead('Settings | Clients', 0) ?>
@@ -14,11 +15,11 @@
 			<a href="manage_settings.php">Users List</a>
 			<a href="user.php">User</a>
       <a href="roles.php">Roles</a>
-      <a href="privileges.php">Privileges</a>
 			<a href="client_list.php">Client List</a>
 			<a href="client.php" id="item_selected">Client</a>
 		</div>
 		<?php
+		if(in_array($pageSecurity, $_SESSION['AllowedPageSecurityTokens'])){
 		if(isset($_POST["save"])){
 			if(isset($_POST['client_name']) && isset($_POST['address']) && isset($_POST['phone']) && isset($_POST['user'])){
 				$userAlreadyAddedAsClient=$fO->userAlreadyAddedAsClient($_POST["user"]);
@@ -122,6 +123,12 @@
 					<input type="submit" name="save" class="btn btn-lg btn-primary"
         	value="Add User" style="display:block; margin: 0 auto;width:200px;"></input>
 				</form>
-				<?php } ?>
+				<?php }
+			 }
+				else{
+					echo '<div class="alert alert-danger">
+						<strong>You do not have permission to access this page, please confirm with the system administrator</strong>
+					</div>';
+				}?>
 	</body>
 </html>

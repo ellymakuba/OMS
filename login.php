@@ -23,7 +23,13 @@
 			// Forward to start.php
 			$user=$functionObject->getUserByUserName($_SESSION['log_user']);
 	    $functionObject->getUserRole($user['user_id']);
-			$_SESSION['AllowedPageSecurityTokens']=$functionObject->getPrivilegesByRole($_SESSION['secroleId']);
+			$_SESSION['AllowedPageSecurityTokens']=array();
+			$tokens=$functionObject->getPrivilegesByRole($_SESSION['secroleId']);
+			$i=0;
+			foreach($tokens as $token){
+				$_SESSION['AllowedPageSecurityTokens'][$i]=$token['tokenid'];
+				$i++;
+			}
 			if($_SESSION['secroleId']==7){
 			header('Location:products.php');
 			}

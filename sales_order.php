@@ -1,6 +1,7 @@
 <?PHP
 	require 'functions.php';
 	require 'salesOrderCart.php';
+	$pageSecurity=4;
 	$fO=new functions();
 	$fO->checkLogin();
 	if (isset($_POST['dispatch'])){
@@ -194,6 +195,7 @@ $('.payment').change(function(){
 			<a href="client_orders_list.php">Client List</a>
       </div>
 			<?php
+			if(in_array($pageSecurity, $_SESSION['AllowedPageSecurityTokens'])){
 			echo '<form class="form-signin" method="POST"  action="'.$_SERVER['PHP_SELF'].'" id="sales_order_cart_form">';
 			if(!isset($_SESSION['salesOrder'])){
 				$_SESSION['salesOrder'] = new Cart();
@@ -441,5 +443,11 @@ $('.payment').change(function(){
 					}
 				?>
       </form>
+			<?php }
+			else{
+				echo '<div class="alert alert-danger">
+					<strong>You do not have permission to access this page, please confirm with the system administrator</strong>
+				</div>';
+			}?>
   </body>
   </html>

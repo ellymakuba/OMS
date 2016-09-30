@@ -2,6 +2,7 @@
 	require 'functions.php';
 	require 'salesOrderCart.php';
 	$fO=new functions();
+	$pageSecurity=6;
 	$fO->checkLogin();
 	if (isset($_POST['update']) && isset($_POST['entry_date']) && count($_SESSION['salesOrder'])>0){
 			$entry_date=date('Y-m-d',strtotime($_POST['entry_date']));
@@ -142,6 +143,7 @@ document.getElementById("discount_sum").value=discount_sum;
 			<a href="client_order" id="item_selected">Order</a>
       </div>
 			<?php
+			if(in_array($pageSecurity, $_SESSION['AllowedPageSecurityTokens'])){
 			if (!isset($_SESSION['salesOrder'])){
 				 $_SESSION['salesOrder'] = new Cart();
 			}
@@ -309,6 +311,11 @@ document.getElementById("discount_sum").value=discount_sum;
 				 }
       echo '</form>';
 		}
-			?>
+	 }
+		else{
+			echo '<div class="alert alert-danger">
+				<strong>You do not have permission to access this page, please confirm with the system administrator</strong>
+			</div>';
+		}?>
   </body>
   </html>

@@ -2,6 +2,7 @@
 	require 'functions.php';
 	$fO=new functions();
 	$fO->checkLogin();
+	$pageSecurity=5;
 	if (isset($_POST['create'])){
 	}
   ?>
@@ -20,6 +21,7 @@
 		<a href="manage_inventory.php">Inventory Value</a>
 		<a href="sales_report.php" id="item_selected">Sales</a>
     </div>
+		<?php if(in_array($pageSecurity, $_SESSION['AllowedPageSecurityTokens'])){?>
   <div class="table-responsive">
     <div class=" pull-left">
           <form class="navbar-form" role="search">
@@ -83,5 +85,11 @@
   }
 	 ?>
     </div>
+		<?php }
+		else{
+			echo '<div class="alert alert-danger">
+				<strong>You do not have permission to access this page, please confirm with the system administrator</strong>
+			</div>';
+		}?>
   </body>
   </html>

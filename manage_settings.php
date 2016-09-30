@@ -3,6 +3,7 @@
 	require 'functions.php';
 	$fO=new functions();
 	$fO->checkLogin();
+	$pageSecurity=1;
 	$users=$fO->getAllUsers();
 ?>
 <html>
@@ -15,10 +16,10 @@
 			<a href="manage_settings.php" id="item_selected">Users List</a>
 			<a href="user.php" >User</a>
       <a href="roles.php">Roles</a>
-      <a href="privileges.php">Privileges</a>
 			<a href="client_list.php">Client List</a>
 			<a href="client.php">Client</a>
 		</div>
+		<?php if(in_array($pageSecurity, $_SESSION['AllowedPageSecurityTokens'])){?>
 		<div class="container">
 			<div class="col-sm-3 col-md-3 pull-left">
 	          <form class="navbar-form" role="search">
@@ -48,5 +49,11 @@
 				</table>
 			</form>
 		</div>
+		<?php }
+		else{
+			echo '<div class="alert alert-danger">
+				<strong>You do not have permission to access this page, please confirm with the system administrator</strong>
+			</div>';
+		}?>
 	</body>
 </html>

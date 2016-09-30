@@ -1,6 +1,7 @@
 <?PHP
 	require 'functions.php';
 	$fO=new functions();
+	$pageSecurity=4;
 	$fO->checkLogin();
 	?>
   <html>
@@ -13,6 +14,7 @@
     <a href="sales_order.php">Sales Order</a>
 		<a href="client_orders_list.php">Client Orders List</a>
     </div>
+		<?php if(in_array($pageSecurity, $_SESSION['AllowedPageSecurityTokens'])){ ?>
   <div class="table-responsive">
     <div class="col-sm-3 col-md-3 pull-left">
           <form class="navbar-form" role="search">
@@ -70,5 +72,11 @@
   ?>
   </table>
     </div>
+		<?php }
+		else{
+			echo '<div class="alert alert-danger">
+				<strong>You do not have permission to access this page, please confirm with the system administrator</strong>
+			</div>';
+		}?>
   </body>
   </html>

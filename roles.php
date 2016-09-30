@@ -2,6 +2,7 @@
 $PageSecurity=1;
 require 'functions.php';
 $fO=new functions();
+$pageSecurity=1;
 $fO->checkLogin();
 if (isset($_GET['SelectedRole'])){
 	$SelectedRole = $_GET['SelectedRole'];
@@ -15,11 +16,14 @@ if (isset($_GET['SelectedRole'])){
 <body class="container">
 <?PHP $fO->includeMenu(4); ?>
 <div id="menu_main">
-	<a href="cust_search.php">Users</a>
+	<a href="manage_settings.php">Users List</a>
+	<a href="user.php" >User</a>
 	<a href="roles.php" id="item_selected">Roles</a>
-	<a href="cust_search.php">Privileges</a>
+	<a href="client_list.php">Client List</a>
+	<a href="client.php">Client</a>
 	</div>
 <?php
+if(in_array($pageSecurity, $_SESSION['AllowedPageSecurityTokens'])){
 if (isset($_POST['submit']) || isset($_GET['remove']) || isset($_GET['add']) ) {
 	$InputError = 0;
 	if (isset($_POST['SecRoleName']) && strlen($_POST['SecRoleName'])<4){
@@ -146,6 +150,12 @@ if (isset($SelectedRole)) {
 		echo '</tr>';
 	}
 	echo '</table>';
+	}
+ 	}
+	else{
+		echo '<div class="alert alert-danger">
+			<strong>You do not have permission to access this page, please confirm with the system administrator</strong>
+		</div>';
 	}
 echo '</body>';
 echo	'</html>';

@@ -1,6 +1,7 @@
 <!DOCTYPE HTML>
 <?PHP
 	require 'functions.php';
+	$pageSecurity=1;
 	function CryptPass($Password ) {
 		return sha1($Password);
     }
@@ -30,11 +31,11 @@
 			<a href="manage_settings.php">Users List</a>
 			<a href="user.php" id="item_selected">User</a>
       <a href="roles.php">Roles</a>
-      <a href="privileges.php">Privileges</a>
 			<a href="client_list.php">Client List</a>
 			<a href="client.php">Client</a>
 		</div>
 		<?php
+		if(in_array($pageSecurity, $_SESSION['AllowedPageSecurityTokens'])){
 		if(isset($_GET['selectedUser'])){
 			$_SESSION['user']=$fO->getUserByUserName($_GET['selectedUser']); ?>
 			<form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="post" class="form-signin">
@@ -106,6 +107,12 @@
 					<input type="submit" name="save_changes" class="btn btn-lg btn-primary"
         	value="Add User" style="display: block; margin: 0 auto;width:200px;"></input>
 				</form>
-				<?php } ?>
+				<?php }
+			 }
+				else{
+					echo '<div class="alert alert-danger">
+						<strong>You do not have permission to access this page, please confirm with the system administrator</strong>
+					</div>';
+				}?>
 	</body>
 </html>

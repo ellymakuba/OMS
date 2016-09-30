@@ -2,6 +2,7 @@
 	require 'functions.php';
 	require 'productCart.php';
 	require 'salesOrderCart.php';
+	$pageSecurity=6;
 	$fO=new functions();
 	$fO->checkLogin();
 	if (isset($_POST['update'])){
@@ -65,7 +66,9 @@ $(document).on("click", "#save", function(e) {
 			<a href="products.php" id="item_selected">Products</a>
       <a href="client_statement.php">Statement</a>
       </div>
-			<?php if (count($_SESSION['salesOrder']->LineItems)>0)
+			<?php
+			if(in_array($pageSecurity, $_SESSION['AllowedPageSecurityTokens'])){
+			 if (count($_SESSION['salesOrder']->LineItems)>0)
 			{ ?>
 			<div class="col-sm-3 col-md-3 pull-right" style="margin-bottom:10px;">
 				<a href="client_order.php" class="btn btn-default btn-primary">View Order Cart</a>
@@ -91,7 +94,7 @@ $(document).on("click", "#save", function(e) {
 				?>
         <div class="col-sm-4 col-lg-4 col-md-4">
           <div class="thumbnail">
-						<img src="images/<?php echo $order->photo ?>" alt="">
+						<img src="images/image.jpg" alt="">
             <div class="caption">
 							<h4 class="pull-right">KSH.<?php echo $order->Price ?></h4>
             <h4><a href="#"><?php echo $order->ItemDescription ?></a></h4>
@@ -113,5 +116,10 @@ $(document).on("click", "#save", function(e) {
 			</div>
       </div>
 		</div>
+		<?php }else{
+			echo '<div class="alert alert-danger">
+				<strong>You do not have permission to access this page, please confirm with the system administrator</strong>
+			</div>';
+		}?>
   </body>
   </html>

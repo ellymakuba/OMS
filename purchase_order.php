@@ -2,6 +2,7 @@
 	require 'functions.php';
 	require 'purchaseOrderCart.php';
 	$fO=new functions();
+	$pageSecurity=3;
 	$fO->checkLogin();
 	if (isset($_POST['receive'])){
 		if(isset($_POST['entry_date']) && isset($_POST['supplier'])){
@@ -187,6 +188,7 @@ document.getElementById("total").value=tAmount;
 			<a href="purchase_order.php" id="item_selected">Purchase Order</a>
       </div>
 			<?php
+			if(in_array($pageSecurity, $_SESSION['AllowedPageSecurityTokens'])){
 			echo '<form class="form-signin" method="POST"  action="'.$_SERVER['PHP_SELF'].'" id="purchase_order_cart_form">';
 				if (!isset($_SESSION['purchaseOrder'])){
 					 $_SESSION['purchaseOrder'] = new PurchaseOrderCart();
@@ -354,7 +356,13 @@ document.getElementById("total").value=tAmount;
 				else{
 					echo '<button type="submit" name="receive" id="order" class="btn btn-lg btn-primary"
 						style="display: block; margin: 0 auto;width:200px;"><span class="fa fa-times"></span>Receive Order</button>';
-				}?>
-      </form>
+				}
+      echo '</form>';
+			}
+			else{
+				echo '<div class="alert alert-danger">
+					<strong>You do not have permission to access this page, please confirm with the system administrator</strong>
+				</div>';
+			}?>
   </body>
   </html>
