@@ -8,7 +8,7 @@ Class ProductCart {
 		$this->LineCounter=0;
 		$this->category='All Categories';
 	}
-	function add_to_cart($productID,$Descr,$Price,$pic,$LineNumber=-1){
+	function add_to_cart($productID,$Descr,$Price,$pic,$name,$LineNumber=-1){
 		if (isset($productID) AND $productID!="" ){
 			if ($Price<0){
 				$Price=0;
@@ -16,7 +16,7 @@ Class ProductCart {
 			if ($LineNumber==-1){
 				$LineNumber = $this->LineCounter;
 			}
-			$this->LineItems[$LineNumber] = new ProductLineDetails($LineNumber,$productID,$Descr,$Price,$pic);
+			$this->LineItems[$LineNumber] = new ProductLineDetails($LineNumber,$productID,$Descr,$Price,$pic,$name);
 			$this->LineCounter = $LineNumber + 1;
 			Return 1;
 		}
@@ -32,13 +32,15 @@ Class ProductLineDetails {
 	Var $ItemDescription;
 	Var $Price;
 	var $photo;
+	var $name;
 
-	function ProductLineDetails ($LineNumber,$productID,$Descr,$Prc,$pic){
+	function ProductLineDetails ($LineNumber,$productID,$Descr,$Prc,$pic,$name){
 		$this->LineNumber = $LineNumber;
 		$this->productID =$productID;
 		$this->ItemDescription = $Descr;
 		$this->Price = $Prc;
 		$this->photo=$pic;
+		$this->name=$name;
 	} //end constructor function for LineDetails
 }
 ?>

@@ -35,7 +35,7 @@
   <table class="table table-striped">
   <tr>
   <form method="POST">
-            <th>Edit</th>
+            <th>Action</th>
             <th>Name</th>
             <th>Description</th>
             <th>Cost</th>
@@ -47,7 +47,7 @@
   if(isset($_REQUEST['srch-term'])){
     $products=$fO->getProductByName($_REQUEST['srch-term']);
     foreach($products as $product){
-      printf("<tr><td><a href=\"product_details.php?SelectedProduct=%s\">" .$product['id'] . "</a></td>
+      printf("<tr><td><a href=\"product_details.php?SelectedProduct=%s\">Edit</a></td>
     <td>%s</td>
     <td>%s</td>
     <td>%s</td>
@@ -67,7 +67,7 @@
   else{
     $products=$fO->getAllProducts();
     foreach($products as $product){
-      printf("<tr><td><a href=\"product_details.php?SelectedProduct=%s\">" .$product['id'] . "</a></td>
+      printf("<tr><td><a href=\"product_details.php?SelectedProduct=%s\">Edit</a></td>
     <td>%s</td>
     <td>%s</td>
     <td>%s</td>

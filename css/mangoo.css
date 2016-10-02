@@ -332,3 +332,13 @@ color:blue;
 	width: 1px;
 	display:none;
 }
+#login {
+	text-align: left;
+	margin: 15% auto 0 auto;
+	padding:6px 0 36px 0;
+	z-index: 1000;
+	width: 585px;
+	background: #f2f2f2;
+	-moz-border-radius: 20px;
+     border-radius: 20px;
+}

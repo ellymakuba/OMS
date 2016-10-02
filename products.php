@@ -26,7 +26,7 @@ $(document).on("click", "#save", function(e) {
 			$_SESSION['productList'] = new ProductCart();
 			$products=$fO->getAllProducts();
 			foreach($products as $product){
-				$_SESSION['productList']->add_to_cart($product['id'],$product['name'],$product['selling_price'],$product['name'].'.jpg',-1);
+				$_SESSION['productList']->add_to_cart($product['id'],$product['description'],$product['selling_price'],$product['pic'],$product['name'],-1);
 			}
 		}
 		if(isset($_GET['category'])){
@@ -35,7 +35,7 @@ $(document).on("click", "#save", function(e) {
 			$_SESSION['productList']->setCategory($selectedCategory['name']);
 			$categoryProducts=$fO->getProductsByCategoryId($_GET['category']);
 			foreach($categoryProducts as $product){
-				$_SESSION['productList']->add_to_cart($product['id'],$product['name'],$product['selling_price'],$product['name'].'.jpg',-1);
+				$_SESSION['productList']->add_to_cart($product['id'],$product['description'],$product['selling_price'],$product['pic'],$product['name'],-1);
 			}
 		}
 		if (!isset($_SESSION['salesOrder'])){
@@ -58,7 +58,7 @@ $(document).on("click", "#save", function(e) {
 				 }
 				if ($AlreadyOnThisCart!=1)
 				{
-					$_SESSION['salesOrder']->add_to_cart($product['id'],$quantity,$product['name'],$product['selling_price'],0,0,0,0,0,-1);
+					$_SESSION['salesOrder']->add_to_cart($product['id'],$quantity,$product['description'],$product['selling_price'],0,0,0,0,0,$product['buying_price'],$product['name'],-1);
 				}
 		}//end of if(isset($_POST['add_cart]))
     ?>
@@ -70,7 +70,7 @@ $(document).on("click", "#save", function(e) {
 			if(in_array($pageSecurity, $_SESSION['AllowedPageSecurityTokens'])){
 			 if (count($_SESSION['salesOrder']->LineItems)>0)
 			{ ?>
-			<div class="col-sm-3 col-md-3 pull-right" style="margin-bottom:10px;">
+			<div class="col-sm-3 col-md-2 pull-right" style="margin-bottom:10px;">
 				<a href="client_order.php" class="btn btn-default btn-primary">View Order Cart</a>
 			</div>
 			<?php } ?>
@@ -94,11 +94,13 @@ $(document).on("click", "#save", function(e) {
 				?>
         <div class="col-sm-4 col-lg-4 col-md-4">
           <div class="thumbnail">
-						<img src="images/image.jpg" alt="">
+						<?php  echo '<img src="upload/'.$order->photo.'">'; ?>
             <div class="caption">
 							<h4 class="pull-right">KSH.<?php echo $order->Price ?></h4>
-            <h4><a href="#"><?php echo $order->ItemDescription ?></a></h4>
-            <p>This is a short description. Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+							<div style="height:100px;">
+            <h4><a href="#"><?php echo $order->name ?></a></h4>
+            <p><?php echo $order->ItemDescription ?>.</p>
+					</div>
 						<a href="products.php?add_cart=<?php echo $order->productID ?>"><h4 class="pull-right">Add to cart</h4></a>
             </div>
             <div class="ratings">

@@ -13,7 +13,7 @@
 				foreach($_POST['product'] as $value){
 					if(isset($_POST['product'][$i]) && isset($_POST['quantity'][$i]) && isset($_POST['price'][$i]) && isset($_POST['amount'][$i])){
 						$fO->saveClientOrderDetails($_SESSION['existing_order'],$_POST['product'][$i],$_POST['quantity'][$i],$_POST['price'][$i],
-						$_POST['amount'][$i],$_POST['discount'][$i]);
+						$_POST['amount'][$i],$_POST['discount'][$i],$_POST['buying_price'][$i],$_POST['profit'][$i]);
 					}
 			 	$i++;
 		 		}
@@ -29,7 +29,8 @@
 	$i=0;
 	foreach($_POST['product'] as $value) {
 	if(isset($_POST['product'][$i]) && isset($_POST['quantity'][$i]) && isset($_POST['price'][$i]) && isset($_POST['amount'][$i])){
-		$fO->saveClientOrderDetails($lastId,$_POST['product'][$i],$_POST['quantity'][$i],$_POST['price'][$i],$_POST['amount'][$i],$_POST['discount'][$i]);
+		$fO->saveClientOrderDetails($lastId,$_POST['product'][$i],$_POST['quantity'][$i],$_POST['price'][$i],$_POST['amount'][$i],
+		$_POST['discount'][$i],$_POST['buying_price'][$i],$_POST['profit'][$i]);
 	}
 	$i++;
 	}
@@ -99,6 +100,7 @@ $(".quantity").change(function(){
 	var quantityId=$(this).attr("id");
 	var id=quantityId.substring(quantityId.indexOf("_")+1);
 	document.getElementById("amount_"+id).value=parseInt($(this).val())*parseInt($("#price_"+id).val());
+	document.getElementById("profit_"+id).value=parseInt($(this).val())*parseInt($("#bp_"+id).val());
 	$(".amount").each(function(){
 		totalAmount +=Number($(this).val());
 	});
@@ -144,6 +146,9 @@ document.getElementById("discount_sum").value=discount_sum;
       </div>
 			<?php
 			if(in_array($pageSecurity, $_SESSION['AllowedPageSecurityTokens'])){
+				if(isset($_REQUEST['clear_order'])){
+					unset($_SESSION['salesOrder']);
+				}
 			if (!isset($_SESSION['salesOrder'])){
 				 $_SESSION['salesOrder'] = new Cart();
 			}
@@ -159,7 +164,7 @@ document.getElementById("discount_sum").value=discount_sum;
 					$_SESSION['salesOrder']->orderDate=$salesOrder['date_required'];
 					$_SESSION['salesOrder']->deliveryStarted=$salesOrder['delivery_started'];
 					foreach($orderProducts as $product){
-					$_SESSION['salesOrder']->add_to_cart($product['id'],$product['quantity'],$product['name'],$product['price'],0,$product['quantity_delivered'],0,0,0,-1);
+					$_SESSION['salesOrder']->add_to_cart($product['id'],$product['quantity'],$product['description'],$product['price'],0,$product['quantity_delivered'],0,0,0,$product['buying_price'],$product['name'],-1);
 				}
 			}
 			}
@@ -183,16 +188,12 @@ document.getElementById("discount_sum").value=discount_sum;
 						<strong>Please clear payment for pending invoice before creating a new one</strong>
 					</div>';
 			}
-			if(isset($_REQUEST['clear_order'])){
-				unset($_SESSION['salesOrder']);
-			}
 			else{
 			echo '<form class="form-signin" method="POST"  action="'.$_SERVER['PHP_SELF'].'" id="sales_order_cart_form">';
 				if(isset($_GET['add_cart'])){
 				$SearchString =$_GET['add_cart'];
 				$product=$fO->getInventoryItemByName($SearchString);
 				$AlreadyOnThisCart =0;
-				$quantity=1;
 				if (count($_SESSION['salesOrder']->LineItems)>0){
 					   foreach ($_SESSION['salesOrder']->LineItems AS $OrderItem)
 						    {
@@ -206,7 +207,7 @@ document.getElementById("discount_sum").value=discount_sum;
 						 }
 						if ($AlreadyOnThisCart!=1)
 						{
-							$_SESSION['salesOrder']->add_to_cart($product['id'],$quantity,$product['name'],$product['selling_price'],0,0,0,0,0,-1);
+							$_SESSION['salesOrder']->add_to_cart($product['id'],1,$product['description'],$product['selling_price'],0,0,0,0,0,$product['buying_price'],$product['name']-1);
 						}
 				}//end of if(isset($_POST['add_cart]))
 				echo '</form>';
@@ -246,11 +247,15 @@ document.getElementById("discount_sum").value=discount_sum;
 					<?php
 					foreach ($_SESSION['salesOrder']->LineItems as $order)
 					{
+						$itemProfit=$order->Price-$order->buyingPrice;
+						$lineProfit=($order->Price-$order->buyingPrice)*$order->Quantity;
 					?>
         <tr id="<?php echo $order->LineNumber ?>">
-        <input type="hidden"  class="form-control" placeholder="Product" name="product[]"  value="<?php echo $order->productID ?>"/>
+        <input type="hidden" name="product[]"  value="<?php echo $order->productID ?>"/>
+				<input type="hidden" name="buying_price[]" id="bp_<?php echo $order->LineNumber ?>" value="<?php echo $itemProfit ?>"/>
+				<input type="hidden" name="profit[]" id="profit_<?php echo $order->LineNumber ?>" value="<?php echo $lineProfit?>"/>
 				<td><input type="text"  class="form-control drug" placeholder="Product"
- 				name="name[]" id="drug_0" style="margin-right:20px;margin-top:10px;" value="<?php echo $order->ItemDescription ?>"
+ 				name="name[]" id="drug_0" style="margin-right:20px;margin-top:10px;" value="<?php echo $order->name ?>"
  				required readonly/>
  				 </td>
 				 <?php if($_SESSION['salesOrder']->deliveryStarted==0){ ?>

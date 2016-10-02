@@ -37,6 +37,7 @@
 	$discount=0;
 	$totalBalance=0;
 	$payment=0;
+	$profit=0;
 	if(isset($_REQUEST['start_date']) && isset($_REQUEST['end_date'])){
 		$_SESSION['start_date']=$_REQUEST['start_date'];
 		$_SESSION['end_date']=$_REQUEST['end_date'];
@@ -44,7 +45,7 @@
   if(isset($_SESSION['start_date']) && isset($_SESSION['end_date'])){
 		?>
 		<table class="table table-striped">
-			<tr><th colspan="5">
+			<tr><th colspan="6">
 				<h2 class="form-signin-heading">Sales Report Between <?php echo $_SESSION['start_date'] ?> and <?php echo $_SESSION['end_date'] ?></h2>
 				</th></tr>
 		  <tr>
@@ -53,6 +54,7 @@
 		      <th>Discount</th>
 		      <th>Payment</th>
 					<th>Balance</th>
+					<th>Profit</th>
 		  </tr>
 			<?php
     $products=$fO->getSalesReport($_SESSION['start_date'],$_SESSION['end_date']);
@@ -62,24 +64,28 @@
 			$discount=$discount+$product['discount'];
 			$totalBalance=$totalBalance+$balance;
 			$payment=$payment+$product['payment'];
+			$profit=$profit+$product['profit'];
       printf("<tr>
     <td>%s</td>
     <td>%s</td>
     <td>%s</td>
     <td>%s</td>
 		<td>%s</td>
+		<td>%s</td>
     </tr>",
 	  $product['name'],
 	  $product['sales'],
 	  $product['discount'],
 	  $product['payment'],
-	  $balance
+	  $balance,
+		$product['profit']
     );
     }
 		echo '<tr><td>Totals KSH:</td><td>'.number_format($sales,2).'</td>';
 		echo '<td>'.number_format($discount,2).'</td>';
 		echo '<td>'.number_format($payment,2).'</td>';
 		echo '<td>'.number_format($totalBalance,2).'</td>';
+		echo '<td>'.number_format($profit,2).'</td>';
 		echo '</tr>';
 	  echo '</table>';
   }

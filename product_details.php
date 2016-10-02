@@ -1,46 +1,53 @@
 <?PHP
 	require 'functions.php';
+	require 'productClass.php';
 	$fO=new functions();
 	$fO->checkLogin();
   $pageSecurity=2;
-	$timestamp = time();
-	//CREATE-Button
 	if (isset($_POST['add_product'])){
+		$_SESSION['errors']=array();
 		if(isset($_POST['name']) && isset($_POST['bPrice']) && isset($_POST['sPrice'])
-		&& isset($_POST['description']) && isset($_POST['company']) && isset($_POST['category']) && isset($_FILES['image'])){
-			$target_dir = "upload/";
-			$target_file = $target_dir . basename($_FILES["image"]["name"]);
-		$max_file_size = 1024*2048; // 2048kb
-		$valid_exts = array('jpeg', 'jpg', 'png', 'tif', 'tiff');
-		$sizes = array(100 => 130, 146 => 190, 230 => 300);
-		if( $_FILES['image']['size'] < $max_file_size ){
-			$ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
-			if (in_array($ext, $valid_exts)){
-				$fO->addNewProduct($_POST['name'],$_POST['bPrice'],$_POST['sPrice'],$_POST['description'],
-				$_POST['company'],$_POST['category'],$_FILES["image"]["name"]);
-				if (file_exists("upload/".$_FILES["image"]["name"])) {
-
-				}
-				else
-				{
-				  move_uploaded_file($_FILES['image']['tmp_name'],$target_path);
-					header("Location:manage_inventory.php");
-				}
-
-			}
-			//else $error_msg = 'Unsupported file';
+		&& isset($_POST['description']) && isset($_POST['company']) && isset($_POST['category']) && isset($_FILES['photo'])){
+			$_SESSION['product']=new ProductClass();
+			$_SESSION['product']->setName($_POST['name']);
+			$_SESSION['product']->setCategory($_POST['category']);
+			$_SESSION['product']->setDescription($_POST['description']);
+			$_SESSION['product']->setBuyingPrice($_POST['bPrice']);
+			$_SESSION['product']->setSellingPrice($_POST['sPrice']);
+			$_SESSION['product']->setCompany($_POST['company']);
+			$_SESSION['product']->setImage($_FILES['photo']);
+		$uploadOk=$fO->checkImage($_FILES['photo']);
+		if($uploadOk==1){
+			$fO->addNewProduct($_POST['name'],$_POST['bPrice'],$_POST['sPrice'],$_POST['description'],
+			$_POST['company'],$_POST['category'],$_FILES["photo"]["name"]);
+			unset($_SESSION['product']);
+			header("Location:manage_inventory.php");
 		}
-		//else $error_msg = 'Please choose an image smaller than 2048kB.';
 		}
 	}
   if (isset($_POST['edit_product'])){
+		$_SESSION['errors']=array();
 		if(isset($_POST['name']) && isset($_POST['bPrice']) && isset($_POST['sPrice'])
 		&& isset($_POST['description']) && isset($_POST['company']) && isset($_POST['category'])){
+		if(!empty($_FILES['photo']['name'])){
+			$uploadOk=$fO->checkImage($_FILES['photo']);
+			if($uploadOk==1){
+			$fO->updateProduct($_SESSION['product_id'],$_POST['name'],$_POST['bPrice'],$_POST['sPrice'],$_POST['description'],
+			$_POST['company'],$_POST['category']);
+			$fO->updateProductImage($_SESSION['product_id'],$_FILES["photo"]["name"]);
+			unset($_SESSION['product_id']);
+			unset($_SESSION['product']);
+			header("Location:manage_inventory.php");
+			}
+		}
+		else{
 		$fO->updateProduct($_SESSION['product_id'],$_POST['name'],$_POST['bPrice'],$_POST['sPrice'],$_POST['description'],
 		$_POST['company'],$_POST['category']);
-		}
 		unset($_SESSION['product_id']);
+		unset($_SESSION['product']);
 		header("Location:manage_inventory.php");
+		}
+		}
 	}
   ?>
   <html>
@@ -60,20 +67,44 @@
 			<a href="purchase_order.php">Purchase Order</a>
       </div>
       <?php
+			if(!isset($_SESSION['errors'])){
+				$_SESSION['errors']=array();
+			}
+			if(!isset($_SESSION['product'])){
+				$_SESSION['product']=new ProductClass();
+			}
 			if(in_array($pageSecurity, $_SESSION['AllowedPageSecurityTokens'])){
+				if(count($_SESSION['errors'])>0){
+					$numberOfErrors=count($_SESSION['errors']);
+					for($i=0;$i<$numberOfErrors;$i++){
+						echo '<div class="alert alert-danger">
+							<strong>'.$_SESSION['errors'][$i].'</strong>
+						</div>';
+					}
+				}
 			if(isset($_REQUEST['SelectedProduct'])){
-        $product=$fO->getProductById($_REQUEST['SelectedProduct']);
+				unset($_SESSION['errors']);
+				$product=$fO->getProductById($_REQUEST['SelectedProduct']);
         $_SESSION['product_id']=$_REQUEST['SelectedProduct'];
+					$_SESSION['product']=new ProductClass();
+					$_SESSION['product']->setName($product['name']);
+					$_SESSION['product']->setCategory($product['category']);
+					$_SESSION['product']->setDescription($product['description']);
+					$_SESSION['product']->setBuyingPrice($product['buying_price']);
+					$_SESSION['product']->setSellingPrice($product['selling_price']);
+					$_SESSION['product']->setCompany($product['company']);
+					$_SESSION['product']->setImage($product['pic']);
+			}
       ?>
       <form class="form-signin" method="POST"  action="<?php echo $_SERVER['PHP_SELF']; ?>" enctype="multipart/form-data">
         <h2 class="form-signin-heading">Edit Product</h2>
-        <input type="text"  class="form-control"  name="name" value="<?php echo $product['name']?>" required>
+        <input type="text"  class="form-control"  name="name" value="<?php echo $_SESSION['product']->name ?>" required>
 				<select  name="category" class="form-control" required>
 					<option disabled selected>category</option>
 					<?php
 					$categories=$fO->getAllProductCategory();
 					foreach($categories as $category){
-						if($category['id']==$product['category']){
+						if($category['id']==$_SESSION['product']->category){
 							echo '<option selected value="'.$category['id'].'">'.$category['name'].'</option>';
 						}
 						else{
@@ -82,36 +113,23 @@
 					}
 					?>
 				</select>
-        <input type="text"  class="form-control" value="<?php echo $product['description']?>" name="description">
-        <input type="text"  class="form-control" value="<?php echo $product['buying_price']?>"  name="bPrice"  required>
-				<input type="text"  class="form-control" value="<?php echo $product['selling_price']?>"  name="sPrice"  required>
-        <input type="text"  class="form-control" value="<?php echo $product['company']?>" name="company" required>
-				<?php  echo '<img src="'.$product['pic'].'">'; ?>
+        <input type="text"  class="form-control" value="<?php echo $_SESSION['product']->description ?>" name="description">
+        <input type="text"  class="form-control" value="<?php echo $_SESSION['product']->buyingPrice ?>"  name="bPrice"  required>
+				<input type="text"  class="form-control" value="<?php echo $_SESSION['product']->sellingPrice ?>"  name="sPrice"  required>
+        <input type="text"  class="form-control" value="<?php echo $_SESSION['product']->company ?>" name="company" required>
+				<?php if(isset($_SESSION['product_id']))
+							{
+								echo '<img src="upload/'.$_SESSION['product']->image.'">';
+							}
+				?>
+				<input type="file" name="photo" id="photo" class="form-control"/>
+				<?php if(isset($_SESSION['product_id'])){ ?>
         <input type="submit" class="btn btn-lg btn-primary btn-block" value="Edit Product" name="edit_product"></input>
+			<?php }else{ ?>
+				<input type="submit" class="btn btn-lg btn-primary btn-block" value="Add Product" name="add_product"></input>
+			<?php } ?>
       </form>
       <?php }
-      else{?>
-        <form class="form-signin" method="POST"  action="<?php echo $_SERVER['PHP_SELF'];?>" enctype="multipart/form-data">
-          <h2 class="form-signin-heading">Add Product</h2>
-          <input type="text"  class="form-control" placeholder="Name" name="name" required>
-					<select  name="category" class="form-control" required>
-						<option disabled selected>category</option>
-						<?php
-						$categories=$fO->getAllProductCategory();
-						foreach($categories as $category){
-						echo '<option value="'.$category['id'].'">'.$category['name'].'</option>';
-						}
-						?>
-					</select>
-          <input type="text"  class="form-control" placeholder="Description" name="description" >
-          <input type="text"  class="form-control" placeholder="Buying Price"  name="bPrice"  required>
-					<input type="text"  class="form-control" placeholder="Selling Price" name="sPrice" required>
-          <input type="text"  class="form-control" placeholder="Manufacturing Company" name="company" required>
-					<input type="file" name="image" id="image" class="form-control" accept="image/*" />
-          <input type="submit" class="btn btn-lg btn-primary btn-block" value="Add Product" name="add_product"></input>
-        </form>
-      <?php }
-		 }
 			else{
 				echo '<div class="alert alert-danger">
 					<strong>You do not have permission to access this page, please confirm with the system administrator</strong>

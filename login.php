@@ -45,30 +45,22 @@
 	<meta charset="utf-8">
 </head>
 	<?PHP $functionObject->includeHead('Hospital Management') ?>
-	<body>
-		<div class="content_center" style="width:50%; padding-left:5em; text-align:left;margin-top:10%;">
-			<p class="heading" style="margin:10px; text-align:center;">User Login</p>
-			<form action="login.php" method="post">
-				<table id="tb_fields" style="margin:0; border-spacing:0em 1.25em;">
-					<tr><td style="padding-left: 80px;font-weight:bold;">Username: </td>
-						<td>
-							<input type="text" name="log_user"  placeholder="Username" />
-						</td>
-					</tr>
-					<tr><td style="padding-left: 80px;font-weight:bold;">Password: </td>
-						<td>
-							<input type="password" name="log_pw" placeholder="Password" />
-						</td>
-					</tr>
-					<tr>
-						<td colspan=2>
-							<input style="margin-left:50%;"  type="submit" name="login" value="Login">
-						</td>
-					</tr>
-				</table>
+	<body class="container">
+		<div id="login">
+			<form class="form-signin" action="login.php" method="post">
+				<div class="form-inline">
+					<label for="user_name">Username:</label>
+					<input type="text" name="log_user" style="width:70%;float:right;" class="form-control" required=""/>
+				</div>
+				<div style="clear:both;"></div>
+				<div class="form-inline">
+					<label for="log_pw">Password:</label>
+					<input type="password" name="log_pw" style="width:70%;float:right;" class="form-control" required=""/>
+				</div>
+				<div style="clear:both;"></div>
+				<input type="submit" name="login" class="btn btn-default btn-primary"
+				value="Login" style="display: block; margin: 0 auto;width:200px;"></input>
 			</form>
-
 		</div>
-
 	</body>
 </html>

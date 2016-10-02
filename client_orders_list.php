@@ -14,7 +14,6 @@
 		?>
 		<div id="menu_main">
 			<a href="manage_orders.php">Uncleared Sales Order</a>
-	    <a href="sales_order.php">Sales Order</a>
 			<a href="client_orders_list.php" id="item_selected">Client Orders List</a>
 		</div>
 		<?php if(in_array($pageSecurity, $_SESSION['AllowedPageSecurityTokens'])){ ?>

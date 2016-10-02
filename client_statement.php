@@ -11,7 +11,7 @@
   <?PHP $fO->includeMenu(1); ?>
 	<div id="menu_main">
 		<a href="products.php">Products</a>
-		<a href="client_statement.php" id="selected_item">Statement</a>
+		<a href="client_statement.php" id="item_selected">Statement</a>
     </div>
 		<?php if(in_array($pageSecurity, $_SESSION['AllowedPageSecurityTokens'])){?>
   <div class="table-responsive">

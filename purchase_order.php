@@ -188,7 +188,18 @@ document.getElementById("total").value=tAmount;
 			<a href="purchase_order.php" id="item_selected">Purchase Order</a>
       </div>
 			<?php
+			if(isset($_REQUEST['clear_order'])){
+				unset($_SESSION['purchaseOrder']);
+				unset($_SESSION['existing_order']);
+			}
 			if(in_array($pageSecurity, $_SESSION['AllowedPageSecurityTokens'])){
+				if(isset($_SESSION['purchaseOrder'])){
+				echo '<div class="pull-right" style="margin-bottom:10px;">
+					<form class="navbar-form">
+				 <button name="clear_order" type="submit" class="glyphicon glyphicon-refresh"></button>
+			 </form>
+			 </div>';
+		 }
 			echo '<form class="form-signin" method="POST"  action="'.$_SERVER['PHP_SELF'].'" id="purchase_order_cart_form">';
 				if (!isset($_SESSION['purchaseOrder'])){
 					 $_SESSION['purchaseOrder'] = new PurchaseOrderCart();

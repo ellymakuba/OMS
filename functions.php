@@ -197,7 +197,7 @@ public function fingerprint(){
         if($_SESSION['secroleId']==7){
           echo '<li';
 				  if ($tab_no == 1) echo ' id="tab_selected"';
-				  echo '><a href="client_orders.php">Client Orders</a></li>';
+				  echo '><a href="products.php">Client Orders</a></li>';
         }
         else{
           echo '<li';
@@ -305,9 +305,19 @@ public function fingerprint(){
 			echo $e->getMessage();
 		}
 	}
+  function updateProductImage($productId,$image){
+		try{
+			$stmt=$this->conn->prepare("UPDATE product SET pic=? WHERE id=?");
+			$params=array($image,$productId);
+			$stmt->execute($params);
+		}
+		catch(PDOException $e){
+			echo $e->getMessage();
+		}
+	}
   function getAllSalesOrders(){
     try{
-      $stmt=$this->conn->prepare("SELECT * FROM sales_order where complete_delivery=? AND cleared=?");
+      $stmt=$this->conn->prepare("SELECT * FROM sales_order where  (cleared=? OR complete_delivery=?)");
       $params=array(0,0);
       $stmt->execute($params);
       $resultSet=$stmt->fetchALL();
@@ -588,11 +598,11 @@ public function fingerprint(){
       echo $e->getMessage();
     }
   }
-  function saveClientOrderDetails($lastId,$productId,$quantity,$price,$amount,$discount){
+  function saveClientOrderDetails($lastId,$productId,$quantity,$price,$amount,$discount,$bP,$profit){
     try{
-      $stmt=$this->conn->prepare("INSERT INTO sales_order_details (sales_order_id,product_id,quantity,price,amount,discount)
-       VALUES (?,?,?,?,?,?)");
-      $params=array($lastId,$productId,$quantity,$price,$amount,$discount);
+      $stmt=$this->conn->prepare("INSERT INTO sales_order_details (sales_order_id,product_id,quantity,price,amount,discount,buying_price,profit)
+       VALUES (?,?,?,?,?,?,?,?)");
+      $params=array($lastId,$productId,$quantity,$price,$amount,$discount,$bP,$profit);
       $stmt->execute($params);
     }
     catch(PDOException $e){
@@ -693,7 +703,7 @@ public function fingerprint(){
   }
   function getSalesOderDetailsByOrderId($id){
     try{
-      $stmt=$this->conn->prepare("SELECT sod.quantity,sod.quantity_delivered,sod.price,p.name,sod.payment,p.id FROM  sales_order_details sod
+      $stmt=$this->conn->prepare("SELECT sod.buying_price,sod.quantity,sod.quantity_delivered,sod.price,p.description,p.name,sod.payment,p.id FROM  sales_order_details sod
       INNER JOIN product p ON sod.product_id=p.id
       WHERE sales_order_id=?");
       $params=array($id);
@@ -1019,7 +1029,8 @@ public function fingerprint(){
     try{
       $startDate=date('Y-m-d',strtotime($startDate));
       $endDate=date('Y-m-d',strtotime($endDate));
-      $stmt=$this->conn->prepare("SELECT p.name,SUM(sod.amount) as sales,SUM(sod.discount) as discount,SUM(sod.payment) as payment
+      $stmt=$this->conn->prepare("SELECT p.name,SUM(sod.amount) as sales,SUM(sod.discount) as discount,SUM(sod.payment) as payment,
+      SUM(sod.profit) as profit
       FROM sales_order_details sod INNER JOIN sales_order so ON sod.sales_order_id=so.sales_order_id
       INNER JOIN product p ON sod.product_id=p.id
       WHERE so.date_required BETWEEN ? AND ?
@@ -1032,17 +1043,41 @@ public function fingerprint(){
 			echo $e->getMessage();
 		}
   }
-  function resizeImage($width, $height, $path){
-		list($w, $h) = getimagesize($_FILES['image']['tmp_name']);
-		$basename = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_FILENAME));
-		$path = $path.$width.'x'.$height.'.jpg';
-		$imgString = file_get_contents($_FILES['image']['tmp_name']);
-		$image = imagecreatefromstring($imgString);
-		$tmp_img = imagecreatetruecolor($width, $height);
-		imagejpeg($tmp_img, $path, 95);
-		return $path;
-		imagedestroy($image);
-		imagedestroy($tmp_img);
+  function checkImage($file){
+    $target_dir = "upload/";
+		$target_file = $target_dir . basename($file["name"]);
+		$max_file_size = 500000;
+		$valid_exts = array('jpeg', 'jpg', 'png', 'gif');
+    $uploadOk =1;
+		if($file['size'] > $max_file_size ){
+			$uploadOk=0;
+			array_push($_SESSION['errors'],"Please choose an image smaller than 500kB.");
+		}
+		$ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+		if(!in_array($ext, $valid_exts)){
+			$uploadOk=0;
+			array_push($_SESSION['errors'],"Unsupported file extension.");
+		}
+		if (file_exists($target_file)){
+			$uploadOk=0;
+			array_push($_SESSION['errors'],"Product image already exists.");
+		}
+		$data = getimagesize($file["tmp_name"]);
+		$width = (int)$data[0];
+		$height =(int)$data[1];
+		if($width >320){
+			$uploadOk=0;
+			array_push($_SESSION['errors'],"The image width cannot exceed 320px.");
+		}
+		if($height !=150){
+			$uploadOk=0;
+			array_push($_SESSION['errors'],"The image height must be equal to 150px.");
+		}
+		if(!move_uploaded_file($file["tmp_name"],$target_file)) {
+			$uploadOk=0;
+			array_push($_SESSION['errors'],"Sorry, there was an error uploading your file.");
+		}
+    return $uploadOk;
 	}
 }
 ?>

@@ -11,7 +11,6 @@
   <?PHP $fO->includeMenu(1); ?>
 	<div id="menu_main">
     <a href="manage_orders.php" id="item_selected">Uncleared sales Orders</a>
-    <a href="sales_order.php">Sales Order</a>
 		<a href="client_orders_list.php">Client Orders List</a>
     </div>
 		<?php if(in_array($pageSecurity, $_SESSION['AllowedPageSecurityTokens'])){ ?>

@@ -251,7 +251,8 @@ $('.payment').change(function(){
 						$_SESSION['salesOrder']->orderDate=$salesOrder['date_required'];
 						$_SESSION['salesOrder']->allDelivariesMade=$salesOrder['complete_delivery'];
 						foreach($orderProducts as $product){
-						$_SESSION['salesOrder']->add_to_cart($product['id'],0,$product['name'],$product['price'],0,$product['quantity_delivered'],$product['quantity'],0,$product['payment'],-1);
+						$_SESSION['salesOrder']->add_to_cart($product['id'],0,$product['name'],$product['price'],0,$product['quantity_delivered'],
+						$product['quantity'],0,$product['payment'],$product['buying_price'],$product['name'],-1);
 						}
 				}
 				}
@@ -266,7 +267,8 @@ $('.payment').change(function(){
 						$orderProducts=$fO->getSalesOderDetailsByOrderId($salesOrder['sales_order_id']);
 						$_SESSION['salesOrder']->orderDate=$salesOrder['date_required'];
 						foreach($orderProducts as $product){
-						$_SESSION['salesOrder']->add_to_cart($product['id'],$product['quantity'],$product['name'],$product['price'],0,$product['quantity_delivered'],0,$product['quantity'],-1);
+						$_SESSION['salesOrder']->add_to_cart($product['id'],$product['quantity'],$product['name'],$product['price'],0,
+						$product['quantity_delivered'],$product['quantity'],0,$product['payment'],$product['buying_price'],$product['name'],-1);
 						}
 				}
 				}
