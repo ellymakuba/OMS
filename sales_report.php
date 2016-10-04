@@ -39,8 +39,8 @@
 	$payment=0;
 	$profit=0;
 	if(isset($_REQUEST['start_date']) && isset($_REQUEST['end_date'])){
-		$_SESSION['start_date']=$_REQUEST['start_date'];
-		$_SESSION['end_date']=$_REQUEST['end_date'];
+		$_SESSION['start_date']=$fO->sanitize($_REQUEST['start_date']);
+		$_SESSION['end_date']=$fO->sanitize($_REQUEST['end_date']);
 	}
   if(isset($_SESSION['start_date']) && isset($_SESSION['end_date'])){
 		?>

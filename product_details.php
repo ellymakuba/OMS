@@ -8,6 +8,13 @@
 		$_SESSION['errors']=array();
 		if(isset($_POST['name']) && isset($_POST['bPrice']) && isset($_POST['sPrice'])
 		&& isset($_POST['description']) && isset($_POST['company']) && isset($_POST['category']) && isset($_FILES['photo'])){
+			$_POST['name']=$fO->sanitize($_POST['name']);
+			$_POST['category']=$fO->sanitize($_POST['category']);
+			$_POST['description']=$fO->sanitize($_POST['description']);
+			$_POST['bPrice']=$fO->sanitize($_POST['bPrice']);
+			$_POST['sPrice']=$fO->sanitize($_POST['sPrice']);
+			$_POST['company']=$fO->sanitize($_POST['company']);
+			$_POST['photo']=$fO->sanitize($_POST['photo']);
 			$_SESSION['product']=new ProductClass();
 			$_SESSION['product']->setName($_POST['name']);
 			$_SESSION['product']->setCategory($_POST['category']);
@@ -97,9 +104,16 @@
 			}
       ?>
       <form class="form-signin" method="POST"  action="<?php echo $_SERVER['PHP_SELF']; ?>" enctype="multipart/form-data">
-        <h2 class="form-signin-heading">Edit Product</h2>
-        <input type="text"  class="form-control"  name="name" value="<?php echo $_SESSION['product']->name ?>" required>
-				<select  name="category" class="form-control" required>
+        <h2 class="form-signin-heading">Product Details</h2>
+				<div class="form-inline">
+					<label for="name">Product Name:</label>
+        <input type="text"  class="form-control" name="name" style="width:90%;float:right;"
+				value="<?php echo $_SESSION['product']->name ?>" required>
+			</div>
+				<div style="clear:both;"></div>
+				<div class="form-inline">
+					<label for="category">Category:</label>
+				<select  name="category" class="form-control" style="width:90%;float:right;" required>
 					<option disabled selected>category</option>
 					<?php
 					$categories=$fO->getAllProductCategory();
@@ -113,10 +127,32 @@
 					}
 					?>
 				</select>
-        <input type="text"  class="form-control" value="<?php echo $_SESSION['product']->description ?>" name="description">
-        <input type="text"  class="form-control" value="<?php echo $_SESSION['product']->buyingPrice ?>"  name="bPrice"  required>
-				<input type="text"  class="form-control" value="<?php echo $_SESSION['product']->sellingPrice ?>"  name="sPrice"  required>
-        <input type="text"  class="form-control" value="<?php echo $_SESSION['product']->company ?>" name="company" required>
+			</div>
+			<div style="clear:both;"></div>
+			<div class="form-inline">
+				<label for="description">Description:</label>
+        <input type="text"  class="form-control" value="<?php echo $_SESSION['product']->description ?>" name="description"
+				style="width:90%;float:right;" required="">
+			</div>
+			<div style="clear:both;"></div>
+			<div class="form-inline">
+				<label for="bPrice">Buying Price:</label>
+        <input type="text"  class="form-control" value="<?php echo $_SESSION['product']->buyingPrice ?>"
+				name="bPrice"  style="width:90%;float:right;" required>
+			</div>
+			<div style="clear:both;"></div>
+			<div class="form-inline">
+				<label for="sPrice">Selling Price:</label>
+				<input type="text"  class="form-control" value="<?php echo $_SESSION['product']->sellingPrice ?>"  name="sPrice"
+				style="width:90%;float:right;" required>
+			</div>
+				<div style="clear:both;"></div>
+				<div class="form-inline">
+					<label for="company">Company:</label>
+        <input type="text"  class="form-control" value="<?php echo $_SESSION['product']->company ?>" name="company"
+				style="width:90%;float:right;" required>
+			</div>
+				<div style="clear:both;"></div>
 				<?php if(isset($_SESSION['product_id']))
 							{
 								echo '<img src="upload/'.$_SESSION['product']->image.'">';

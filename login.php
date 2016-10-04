@@ -1,13 +1,11 @@
-<!DOCTYPE HTML>
 <?PHP
-	session_start();
+session_start();
 	require 'functions.php';
 	$functionObject=new functions();
-
 	if(isset($_POST['login'])){
 		// Sanitize user input
-		$username = $_POST['log_user'];
-		$password = $_POST['log_pw'];
+		$username = $functionObject->sanitize($_POST['log_user']);
+		$password = $functionObject->sanitize($_POST['log_pw']);
 		$fingerprint=$functionObject->fingerprint();
 		$user=$functionObject->getUserByUsernameAndPassword($username, $password);
 		if($user){

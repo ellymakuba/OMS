@@ -101,7 +101,7 @@ $(document).on("click", "#save", function(e) {
             <h4><a href="#"><?php echo $order->name ?></a></h4>
             <p><?php echo $order->ItemDescription ?>.</p>
 					</div>
-						<a href="products.php?add_cart=<?php echo $order->productID ?>"><h4 class="pull-right">Add to cart</h4></a>
+						<a href="products.php?add_cart=<?php echo $order->productID ?>"><h4 class="pull-right">Order Product</h4></a>
             </div>
             <div class="ratings">
             <p>

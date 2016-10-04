@@ -1,4 +1,3 @@
-<!DOCTYPE HTML>
 <?PHP
 	require 'functions.php';
 	$pageSecurity=1;

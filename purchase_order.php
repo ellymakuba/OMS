@@ -239,27 +239,33 @@ document.getElementById("total").value=tAmount;
 				}
 				if (isset($_GET['update_cart']) && isset($_SESSION['purchaseOrder']))
 				{
-					$_SESSION['purchaseOrder']->update_cart($_GET['update_cart'],$_GET['quantity']);
+					$quantity=$fO->sanitize($_GET['quantity']);
+					$_SESSION['purchaseOrder']->update_cart($_GET['update_cart'],$quantity);
 					$_SESSION['purchaseOrderUpdated']=1;
 				}
 				if (isset($_GET['set_date']) && isset($_SESSION['purchaseOrder']))
 				{
-					$_SESSION['purchaseOrder']->setDeliveryDate($_GET['set_date']);
+					$date=$fO->sanitize($_GET['set_date']);
+					$_SESSION['purchaseOrder']->setDeliveryDate($date);
 					$_SESSION['purchaseOrderUpdated']=1;
 				}
 				if (isset($_GET['set_supplier']) && isset($_SESSION['purchaseOrder']))
 				{
-					$_SESSION['purchaseOrder']->setSupplier($_GET['set_supplier']);
+					$supplier=$fO->sanitize($_GET['set_supplier']);
+					$_SESSION['purchaseOrder']->setSupplier($supplier);
 					$_SESSION['purchaseOrderUpdated']=1;
 				}
 				if (isset($_GET['set_batch']) && isset($_SESSION['purchaseOrder']))
 				{
-					$_SESSION['purchaseOrder']->setLineItemBatchNo($_GET['set_batch'],$_GET['batchNo']);
+					$set_batch=$fO->sanitize($_GET['set_batch']);
+					$batchNo=$fO->sanitize($_GET['batchNo']);
+					$_SESSION['purchaseOrder']->setLineItemBatchNo($set_batch,$batchNo);
 					$_SESSION['purchaseOrderUpdated']=1;
 				}
 				if (isset($_GET['set_expiry_date']) && isset($_SESSION['purchaseOrder']))
 				{
-					$_SESSION['purchaseOrder']->setLineItemExpiryDate($_GET['set_expiry_date'],$_GET['expiry_date']);
+					$expiry_date=$fO->sanitize($_GET['expiry_date']);
+					$_SESSION['purchaseOrder']->setLineItemExpiryDate($_GET['set_expiry_date'],$expiry_date);
 					$_SESSION['purchaseOrderUpdated']=1;
 				}
 				if(isset($_GET['SelectedOrder'])){

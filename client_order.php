@@ -174,12 +174,14 @@ document.getElementById("discount_sum").value=discount_sum;
 			}
 			if (isset($_GET['update_cart']))
 			{
-				$_SESSION['salesOrder']->update_cart($_GET['update_cart'],$_GET['quantity']);
+				$quantity=$fO->sanitize($_GET['quantity']);
+				$_SESSION['salesOrder']->update_cart($_GET['update_cart'],$quantity);
 				$_SESSION['salesOrderUpdated']=1;
 			}
 			if (isset($_GET['set_date']))
 			{
-				$_SESSION['salesOrder']->setDeliveryDate($_GET['set_date']);
+				$date=$fO->sanitize($_GET['set_date']);
+				$_SESSION['salesOrder']->setDeliveryDate($date);
 				$_SESSION['salesOrderUpdated']=1;
 			}
 			$hasPendingOrder=$fO->getClientOrderingValidity($_SESSION['log_user']);

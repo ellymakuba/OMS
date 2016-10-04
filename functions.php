@@ -91,7 +91,7 @@ public function fingerprint(){
   }
 	}
 	function sanitize($var) {
-		$var=filter_var($var, FILTER_SANITIZE_STRING);
+		$var=htmlspecialchars($var);
 		return $var;
 	}
 
@@ -107,7 +107,8 @@ public function fingerprint(){
 		else header('Location: start.php');
 	}
 	function includeHead($title, $endFlag = 1) {
-		echo '<head>
+		echo '<!DOCTYPE HTML>
+    <head>
 			<meta http-equiv="Content-Script-Type" content="text/javascript">
 			<meta http-equiv="Content-Style-Type" content="text/css">
 			<meta name="robots" content="noindex, nofollow">

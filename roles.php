@@ -64,13 +64,13 @@ if (isset($_POST['submit']) || isset($_GET['remove']) || isset($_GET['add']) ) {
 if (!isset($SelectedRole)) {
 	$roles=$fO->getAllSecurityRoles();
 	echo '<table class="table table-striped">';
-	echo "<tr><th>" . _('Role') . "</th></tr>";
+	echo "<tr><th>Role</th></tr>";
 	$k=0; //row colour counter
 	foreach($roles as $role)
 	{
 		printf("<td>%s</td>
-			<td><a href=\"%s?SelectedRole=%s\">" . _('Edit') . "</a></td>
-			<td><a href=\"%s?SelectedRole=%s&delete=1&SecRoleName=%s\">" . _('Delete') . "</a></td>
+			<td><a href=\"%s?SelectedRole=%s\">Edit</a></td>
+			<td><a href=\"%s?SelectedRole=%s&delete=1&SecRoleName=%s\">Delete</a></td>
 			</tr>",
 			$role['secrolename'],
 			$_SERVER['PHP_SELF'],
@@ -83,7 +83,7 @@ if (!isset($SelectedRole)) {
 	echo '</table>';
 } //end of ifs and buts!
 if (isset($SelectedRole)) {
-	echo "<br /><div class='btn btn-default btn-primary'><a href='" . $_SERVER['PHP_SELF'] ."'>" . _('Review Existing Roles') . '</a></div>';
+	echo "<br /><div class='btn btn-default btn-primary'><a href='" . $_SERVER['PHP_SELF'] ."'>Review Existing Roles</a></div>";
 }
 if (isset($SelectedRole)) {
 	$role=$fO->getRoleById($SelectedRole);
@@ -103,10 +103,10 @@ echo '<table class="table table-striped">';
 if (!isset($_POST['SecRoleName'])) {
 	$_POST['SecRoleName']='';
 }
-echo '<tr><td>' . _('Role') . ":</td>
+echo "<tr><td>Role</td>
 	<td><input type='text' name='SecRoleName' class='form-control' VALUE='" . $_POST['SecRoleName'] . "'></tr>";
 echo "</table><br />
-	<div class='centre'><input type='Submit' name='submit' value='" . _('Enter Role') . "'></div></form>";
+	<div class='centre'><input type='Submit' name='submit' value='Enter Role'></div></form>";
 if (isset($SelectedRole)) {
 	$privileges=$fO->getAllPrivileges();
 	$tokens=$fO->getPrivilegesByRole($SelectedRole);
@@ -118,15 +118,15 @@ if (isset($SelectedRole)) {
 	}
 	echo '<br /><table class="table table-striped"><tr>';
 	if (count($privileges)>0 ) {
-		echo "<th colspan=3><div class='centre'>"._('Assigned Privileges')."</div></th>";
-		echo "<th colspan=3><div class='centre'>"._('Available Privileges')."</div></th>";
+		echo "<th colspan=3><div class='centre'>Assigned Privileges</div></th>";
+		echo "<th colspan=3><div class='centre'>Available Privileges</div></th>";
 	}
 	echo '</tr>';
 	$k=0; //row colour counter
 	foreach($privileges as $privilege) {
 		if (in_array($privilege['tokenid'],$TokensUsed)){
 			printf("<td>%s</td><td>%s</td>
-				<td><a href=\"%s?SelectedRole=%s&remove=1&PageToken=%s\">" . _('Remove') . "</a></td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>",
+				<td><a href=\"%s?SelectedRole=%s&remove=1&PageToken=%s\">Remove</a></td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>",
 				$privilege['tokenid'],
 				$privilege['tokenname'],
 				$_SERVER['PHP_SELF'],
@@ -139,7 +139,7 @@ if (isset($SelectedRole)) {
 				<td>&nbsp;</td>
 				<td>%s</td>
 				<td>%s</td>
-				<td><a href=\"%s?SelectedRole=%s&add=1&PageToken=%s\">" . _('Add') . "</a></td>",
+				<td><a href=\"%s?SelectedRole=%s&add=1&PageToken=%s\">Add</a></td>",
 				$privilege['tokenid'],
 				$privilege['tokenname'],
 				$_SERVER['PHP_SELF'],

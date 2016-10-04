@@ -1,4 +1,3 @@
-<!DOCTYPE HTML>
 <?PHP
 	require 'functions.php';
 	$fO=new functions();
